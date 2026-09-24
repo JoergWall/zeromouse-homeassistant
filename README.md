@@ -82,7 +82,7 @@ it) are still shown, because the cloud API does not report device capabilities.
 ### HACS (recommended)
 
 1. In HACS, open *Integrations* → ⋮ → *Custom repositories*.
-2. Add `https://github.com/joergwall/zeromouse-homeassistant` with the category *Integration*.
+2. Add `https://github.com/JoergWall/zeromouse-homeassistant` with the category *Integration*.
 3. Search for **ZeroMOUSE**, install it and restart Home Assistant.
 
 ### Manual
@@ -463,5 +463,5 @@ ZeroMOUSE and the ZeroMOUSE logo are trademarks of their respective owner and ar
 here only to identify the product this integration works with. Sure Petcare and SureFlap
 are trademarks of their respective owner.
 
-Maintainer: [@joergwall](https://github.com/joergwall). Please report bugs and ideas as
-[issues](https://github.com/joergwall/zeromouse-homeassistant/issues).
+Maintainer: [@JoergWall](https://github.com/JoergWall). Please report bugs and ideas as
+[issues](https://github.com/JoergWall/zeromouse-homeassistant/issues).

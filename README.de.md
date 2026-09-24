@@ -85,7 +85,7 @@ Geräts nicht meldet.
 ### HACS (empfohlen)
 
 1. In HACS *Integrationen* → ⋮ → *Benutzerdefinierte Repositories* öffnen.
-2. `https://github.com/joergwall/zeromouse-homeassistant` mit der Kategorie *Integration* hinzufügen.
+2. `https://github.com/JoergWall/zeromouse-homeassistant` mit der Kategorie *Integration* hinzufügen.
 3. Nach **ZeroMOUSE** suchen, installieren und Home Assistant neu starten.
 
 ### Manuell
@@ -435,5 +435,5 @@ ZeroMOUSE und das ZeroMOUSE-Logo sind Marken ihres jeweiligen Inhabers und werde
 verwendet, um das Produkt zu benennen, mit dem diese Integration zusammenarbeitet. Sure
 Petcare und SureFlap sind Marken ihres jeweiligen Inhabers.
 
-Maintainer: [@joergwall](https://github.com/joergwall). Fehler und Ideen bitte als
-[Issue](https://github.com/joergwall/zeromouse-homeassistant/issues) melden.
+Maintainer: [@JoergWall](https://github.com/JoergWall). Fehler und Ideen bitte als
+[Issue](https://github.com/JoergWall/zeromouse-homeassistant/issues) melden.

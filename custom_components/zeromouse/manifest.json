@@ -1,0 +1,23 @@
+{
+  "domain": "zeromouse",
+  "name": "ZeroMOUSE",
+  "codeowners": [
+    "@joergwall"
+  ],
+  "config_flow": true,
+  "dependencies": [
+    "frontend",
+    "http"
+  ],
+  "documentation": "https://github.com/joergwall/zeromouse-homeassistant",
+  "integration_type": "hub",
+  "iot_class": "cloud_push",
+  "issue_tracker": "https://github.com/joergwall/zeromouse-homeassistant/issues",
+  "loggers": [
+    "pycognito"
+  ],
+  "requirements": [
+    "pycognito>=2024.5.1"
+  ],
+  "version": "0.3.0"
+}

@@ -1,0 +1,19 @@
+# Personal files, not part of the published integration
+dashboard/cats/
+
+# Output of tools/zeromouse_cli.py (contains account data and pictures)
+zeromouse_dump.json
+zeromouse_*.jpg
+
+# Python / tooling
+__pycache__/
+*.py[cod]
+.coverage
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.venv/
+venv/
+
+# macOS
+.DS_Store

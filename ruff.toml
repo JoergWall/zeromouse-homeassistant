@@ -1,0 +1,12 @@
+# Mirrors the relevant parts of Home Assistant core's ruff configuration
+target-version = "py313"
+
+[lint]
+select = ["B", "E", "F", "I", "PL", "SIM", "UP", "W"]
+ignore = ["E501", "PLR0912", "PLR0913", "PLR0915", "PLR2004"]
+
+[lint.isort]
+force-sort-within-sections = true
+known-first-party = ["homeassistant"]
+combine-as-imports = true
+split-on-trailing-comma = false

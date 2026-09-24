@@ -1,0 +1,119 @@
+{
+  "entity": {
+    "binary_sensor": {
+      "prey_blocked": {
+        "default": "mdi:lock-open-variant-outline",
+        "state": {
+          "on": "mdi:lock-alert"
+        }
+      }
+    },
+    "event": {
+      "detection": {
+        "default": "mdi:cat",
+        "state_attributes": {
+          "event_type": {
+            "state": {
+              "prey": "mdi:rodent",
+              "clean": "mdi:check-circle-outline",
+              "undecidable": "mdi:help-circle-outline",
+              "out": "mdi:exit-run",
+              "hand": "mdi:hand-back-right-outline"
+            }
+          }
+        }
+      }
+    },
+    "image": {
+      "last_event_image": {
+        "default": "mdi:camera"
+      }
+    },
+    "select": {
+      "entry_mode": {
+        "default": "mdi:door-open",
+        "state": {
+          "free_entry": "mdi:door-open",
+          "blocking_prey": "mdi:rodent",
+          "face_detection": "mdi:face-recognition",
+          "locked": "mdi:lock"
+        }
+      },
+      "exit_mode": {
+        "default": "mdi:exit-run",
+        "state": {
+          "open": "mdi:door-open",
+          "locked": "mdi:lock",
+          "time_based": "mdi:clock-outline"
+        }
+      },
+      "undecidable_mode": {
+        "default": "mdi:help-rhombus-outline"
+      },
+      "prey_block_time": {
+        "default": "mdi:timer-lock-outline"
+      }
+    },
+    "sensor": {
+      "last_event": {
+        "default": "mdi:cat",
+        "state": {
+          "prey": "mdi:rodent",
+          "clean": "mdi:check-circle-outline",
+          "undecidable": "mdi:help-circle-outline",
+          "out": "mdi:exit-run",
+          "hand": "mdi:hand-back-right-outline"
+        }
+      },
+      "last_prey_time": {
+        "default": "mdi:rodent"
+      },
+      "last_cat": {
+        "default": "mdi:cat"
+      },
+      "prey_this_month": {
+        "default": "mdi:rodent"
+      },
+      "prey_total": {
+        "default": "mdi:counter"
+      },
+      "event_count": {
+        "default": "mdi:counter"
+      },
+      "ai_score": {
+        "default": "mdi:brain"
+      },
+      "feedback_score": {
+        "default": "mdi:thumb-up-outline"
+      },
+      "boot_count": {
+        "default": "mdi:restart"
+      }
+    },
+    "switch": {
+      "block_prey": {
+        "default": "mdi:shield-lock-outline",
+        "state": {
+          "off": "mdi:shield-off-outline"
+        }
+      },
+      "block_unknown_cats": {
+        "default": "mdi:cat"
+      },
+      "cat_allow_entry": {
+        "default": "mdi:cat",
+        "state": {
+          "off": "mdi:cancel"
+        }
+      }
+    },
+    "time": {
+      "exit_open_at": {
+        "default": "mdi:door-open"
+      },
+      "exit_close_at": {
+        "default": "mdi:door-closed-lock"
+      }
+    }
+  }
+}

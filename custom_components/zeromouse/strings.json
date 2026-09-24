@@ -1,0 +1,206 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "ZeroMOUSE",
+        "description": "Sign in with your ZeroMOUSE app account.",
+        "data": {
+          "email": "Email",
+          "password": "Password"
+        },
+        "data_description": {
+          "email": "The email address you use to sign in to the ZeroMOUSE app.",
+          "password": "The password of your ZeroMOUSE app account."
+        }
+      },
+      "reauth_confirm": {
+        "title": "Sign in again",
+        "description": "Enter the current password for {email}.",
+        "data": {
+          "password": "Password"
+        },
+        "data_description": {
+          "password": "The password of your ZeroMOUSE app account."
+        }
+      },
+      "reconfigure": {
+        "title": "Change ZeroMOUSE account",
+        "description": "Change the email address or password. It has to be the same ZeroMOUSE account.",
+        "data": {
+          "email": "Email",
+          "password": "Password"
+        },
+        "data_description": {
+          "email": "The email address you use to sign in to the ZeroMOUSE app.",
+          "password": "The password of your ZeroMOUSE app account."
+        }
+      }
+    },
+    "error": {
+      "invalid_auth": "Invalid email or password",
+      "cannot_connect": "Cannot connect to the ZeroMOUSE cloud",
+      "unknown": "Unexpected error"
+    },
+    "abort": {
+      "already_configured": "Account is already configured",
+      "reauth_successful": "Re-authentication was successful",
+      "unique_id_mismatch": "The credentials belong to a different ZeroMOUSE account",
+      "reconfigure_successful": "Re-configuration was successful"
+    }
+  },
+  "entity": {
+    "binary_sensor": {
+      "prey_blocked": {
+        "name": "Prey block active"
+      }
+    },
+    "event": {
+      "detection": {
+        "name": "Detection",
+        "state_attributes": {
+          "event_type": {
+            "state": {
+              "prey": "Prey detected",
+              "clean": "No prey",
+              "undecidable": "Inconclusive",
+              "out": "Leaving",
+              "early": "Too early",
+              "late": "Too late",
+              "free": "Free entry",
+              "test": "Test",
+              "unknown": "Unknown",
+              "hand": "Hand detected"
+            }
+          }
+        }
+      }
+    },
+    "image": {
+      "last_event_image": {
+        "name": "Last event image"
+      }
+    },
+    "select": {
+      "entry_mode": {
+        "name": "Entry mode",
+        "state": {
+          "free_entry": "Free entry",
+          "blocking_prey": "Block prey",
+          "face_detection": "Face detection",
+          "locked": "Locked"
+        }
+      },
+      "exit_mode": {
+        "name": "Exit mode",
+        "state": {
+          "open": "Open",
+          "locked": "Locked",
+          "time_based": "Time based"
+        }
+      },
+      "undecidable_mode": {
+        "name": "Inconclusive event handling",
+        "state": {
+          "smart": "Smart mode",
+          "always_allow": "Always allow",
+          "always_block": "Always block"
+        }
+      },
+      "prey_block_time": {
+        "name": "Prey block duration",
+        "state": {
+          "10": "10 seconds",
+          "15": "15 seconds",
+          "30": "30 seconds",
+          "60": "1 minute",
+          "120": "2 minutes",
+          "300": "5 minutes",
+          "600": "10 minutes",
+          "900": "15 minutes",
+          "1800": "30 minutes",
+          "3600": "60 minutes"
+        }
+      }
+    },
+    "sensor": {
+      "last_event": {
+        "name": "Last event",
+        "state": {
+          "prey": "Prey detected",
+          "clean": "No prey",
+          "undecidable": "Inconclusive",
+          "out": "Leaving",
+          "early": "Too early",
+          "late": "Too late",
+          "free": "Free entry",
+          "test": "Test",
+          "unknown": "Unknown",
+          "hand": "Hand detected"
+        }
+      },
+      "last_event_time": {
+        "name": "Last event time"
+      },
+      "last_prey_time": {
+        "name": "Last prey"
+      },
+      "last_cat": {
+        "name": "Last cat"
+      },
+      "prey_this_month": {
+        "name": "Prey this month"
+      },
+      "prey_total": {
+        "name": "Prey total"
+      },
+      "event_count": {
+        "name": "Event count"
+      },
+      "ai_score": {
+        "name": "AI personalization status"
+      },
+      "feedback_score": {
+        "name": "Feedback score"
+      },
+      "wifi_rssi": {
+        "name": "Wi-Fi signal"
+      },
+      "boot_count": {
+        "name": "Boot count"
+      }
+    },
+    "switch": {
+      "block_prey": {
+        "name": "Block prey"
+      },
+      "block_unknown_cats": {
+        "name": "Block unknown cats"
+      },
+      "cat_allow_entry": {
+        "name": "{cat} allow entry"
+      }
+    },
+    "time": {
+      "exit_open_at": {
+        "name": "Exit open from"
+      },
+      "exit_close_at": {
+        "name": "Exit open until"
+      }
+    }
+  },
+  "exceptions": {
+    "api_error": {
+      "message": "The ZeroMOUSE cloud rejected the change: {error}"
+    },
+    "auth_failed": {
+      "message": "Signing in to ZeroMOUSE failed: {error}"
+    },
+    "cannot_connect": {
+      "message": "Cannot reach the ZeroMOUSE cloud: {error}"
+    },
+    "update_failed": {
+      "message": "Fetching ZeroMOUSE data failed: {error}"
+    }
+  }
+}

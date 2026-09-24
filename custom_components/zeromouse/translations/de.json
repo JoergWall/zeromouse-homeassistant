@@ -1,0 +1,206 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "ZeroMOUSE",
+        "description": "Melde dich mit deinem Konto der ZeroMOUSE-App an.",
+        "data": {
+          "email": "E-Mail",
+          "password": "Passwort"
+        },
+        "data_description": {
+          "email": "Die E-Mail-Adresse, mit der du dich in der ZeroMOUSE-App anmeldest.",
+          "password": "Das Passwort deines ZeroMOUSE-App-Kontos."
+        }
+      },
+      "reauth_confirm": {
+        "title": "Erneut anmelden",
+        "description": "Gib das aktuelle Passwort für {email} ein.",
+        "data": {
+          "password": "Passwort"
+        },
+        "data_description": {
+          "password": "Das Passwort deines ZeroMOUSE-App-Kontos."
+        }
+      },
+      "reconfigure": {
+        "title": "ZeroMOUSE-Konto ändern",
+        "description": "Ändere E-Mail-Adresse oder Passwort. Es muss dasselbe ZeroMOUSE-Konto bleiben.",
+        "data": {
+          "email": "E-Mail",
+          "password": "Passwort"
+        },
+        "data_description": {
+          "email": "Die E-Mail-Adresse, mit der du dich in der ZeroMOUSE-App anmeldest.",
+          "password": "Das Passwort deines ZeroMOUSE-App-Kontos."
+        }
+      }
+    },
+    "error": {
+      "invalid_auth": "E-Mail oder Passwort ungültig",
+      "cannot_connect": "Keine Verbindung zur ZeroMOUSE-Cloud",
+      "unknown": "Unerwarteter Fehler"
+    },
+    "abort": {
+      "already_configured": "Konto ist bereits eingerichtet",
+      "reauth_successful": "Erneute Anmeldung erfolgreich",
+      "unique_id_mismatch": "Die Zugangsdaten gehören zu einem anderen ZeroMOUSE-Konto",
+      "reconfigure_successful": "Die Einstellungen wurden gespeichert"
+    }
+  },
+  "entity": {
+    "binary_sensor": {
+      "prey_blocked": {
+        "name": "Beutesperre aktiv"
+      }
+    },
+    "event": {
+      "detection": {
+        "name": "Erkennung",
+        "state_attributes": {
+          "event_type": {
+            "state": {
+              "prey": "Beute erkannt",
+              "clean": "Keine Beute erkannt",
+              "undecidable": "Nicht entscheidbar",
+              "out": "Rausgehen erkannt",
+              "early": "Zu früh",
+              "late": "Zu spät",
+              "free": "Freier Eintritt",
+              "test": "Test",
+              "unknown": "Unbekannt",
+              "hand": "Hand erkannt"
+            }
+          }
+        }
+      }
+    },
+    "image": {
+      "last_event_image": {
+        "name": "Letztes Ereignisbild"
+      }
+    },
+    "select": {
+      "entry_mode": {
+        "name": "Eingangsmodus",
+        "state": {
+          "free_entry": "Freier Eintritt",
+          "blocking_prey": "Beute blockieren",
+          "face_detection": "Gesichtserkennung",
+          "locked": "Gesperrt"
+        }
+      },
+      "exit_mode": {
+        "name": "Ausgangsmodus",
+        "state": {
+          "open": "Offen",
+          "locked": "Gesperrt",
+          "time_based": "Zeitbasiert"
+        }
+      },
+      "undecidable_mode": {
+        "name": "Verhalten bei „Nicht entscheidbar“",
+        "state": {
+          "smart": "Smarter Modus",
+          "always_allow": "Immer öffnen",
+          "always_block": "Immer blockieren"
+        }
+      },
+      "prey_block_time": {
+        "name": "Blockierdauer bei Beute",
+        "state": {
+          "10": "10 Sekunden",
+          "15": "15 Sekunden",
+          "30": "30 Sekunden",
+          "60": "1 Minute",
+          "120": "2 Minuten",
+          "300": "5 Minuten",
+          "600": "10 Minuten",
+          "900": "15 Minuten",
+          "1800": "30 Minuten",
+          "3600": "60 Minuten"
+        }
+      }
+    },
+    "sensor": {
+      "last_event": {
+        "name": "Letztes Ereignis",
+        "state": {
+          "prey": "Beute erkannt",
+          "clean": "Keine Beute erkannt",
+          "undecidable": "Nicht entscheidbar",
+          "out": "Rausgehen erkannt",
+          "early": "Zu früh",
+          "late": "Zu spät",
+          "free": "Freier Eintritt",
+          "test": "Test",
+          "unknown": "Unbekannt",
+          "hand": "Hand erkannt"
+        }
+      },
+      "last_event_time": {
+        "name": "Zeit des letzten Ereignisses"
+      },
+      "last_prey_time": {
+        "name": "Letzte Beute"
+      },
+      "last_cat": {
+        "name": "Letzte Katze"
+      },
+      "prey_this_month": {
+        "name": "Beute diesen Monat"
+      },
+      "prey_total": {
+        "name": "Beute gesamt"
+      },
+      "event_count": {
+        "name": "Anzahl Ereignisse"
+      },
+      "ai_score": {
+        "name": "KI-Personalisierungsstatus"
+      },
+      "feedback_score": {
+        "name": "Feedback Score"
+      },
+      "wifi_rssi": {
+        "name": "WLAN-Signal"
+      },
+      "boot_count": {
+        "name": "Anzahl Neustarts"
+      }
+    },
+    "switch": {
+      "block_prey": {
+        "name": "Beute blockieren"
+      },
+      "block_unknown_cats": {
+        "name": "Unbekannte Katzen blockieren"
+      },
+      "cat_allow_entry": {
+        "name": "{cat} Eintritt erlauben"
+      }
+    },
+    "time": {
+      "exit_open_at": {
+        "name": "Ausgang offen ab"
+      },
+      "exit_close_at": {
+        "name": "Ausgang offen bis"
+      }
+    }
+  },
+  "exceptions": {
+    "api_error": {
+      "message": "Die ZeroMOUSE-Cloud hat die Änderung abgelehnt: {error}"
+    },
+    "auth_failed": {
+      "message": "Anmeldung bei ZeroMOUSE fehlgeschlagen: {error}"
+    },
+    "cannot_connect": {
+      "message": "Die ZeroMOUSE-Cloud ist nicht erreichbar: {error}"
+    },
+    "update_failed": {
+      "message": "Abruf der ZeroMOUSE-Daten fehlgeschlagen: {error}"
+    }
+  }
+}

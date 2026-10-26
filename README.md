@@ -718,9 +718,11 @@ data.
 
 The code is released under the [MIT License](LICENSE).
 
-ZeroMOUSE and the ZeroMOUSE logo are trademarks of their respective owner and are used
-here only to identify the product this integration works with. Sure Petcare, SureFlap,
-PetSafe, Cat Mate, Ferplast and OnlyCat are trademarks of their respective owners.
+This is an unofficial project, not affiliated with or endorsed by ZeroMOUSE. ZeroMOUSE is
+a trademark of its respective owner and is used here only to identify the product this
+integration works with. The integration icon is an original design and not the ZeroMOUSE
+logo. Sure Petcare, SureFlap, PetSafe, Cat Mate, Ferplast and OnlyCat are trademarks of
+their respective owners.
 
 Maintainer: [@JoergWall](https://github.com/JoergWall). Please report bugs and ideas as
 [issues](https://github.com/JoergWall/zeromouse-homeassistant/issues).

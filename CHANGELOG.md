@@ -29,6 +29,7 @@ All notable changes to this project. The version matches `version` in
   the timeline and the cat flap matching use these groups; the websocket API returns
   each event's `group`.
 - Translations of `early`, `late` and `test` follow the app.
+- The integration icon is now an own, neutral design instead of the ZeroMOUSE logo.
 
 ## 0.3.0 – 2026-09-24
 - Login fully asynchronous, quality scale up to Platinum, reconfiguration, dynamic and

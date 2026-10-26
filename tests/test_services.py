@@ -5,13 +5,17 @@ from __future__ import annotations
 from unittest.mock import MagicMock
 
 import pytest
-from pytest_homeassistant_custom_component.common import MockConfigEntry
+from pytest_homeassistant_custom_component.common import MockConfigEntry, MockUser
 
 from custom_components.zeromouse.api import ZeroMouseApiError
 from custom_components.zeromouse.const import DOMAIN
 from homeassistant.config_entries import ConfigEntryState
-from homeassistant.core import HomeAssistant
-from homeassistant.exceptions import HomeAssistantError, ServiceValidationError
+from homeassistant.core import Context, HomeAssistant
+from homeassistant.exceptions import (
+    HomeAssistantError,
+    ServiceValidationError,
+    Unauthorized,
+)
 from homeassistant.helpers import device_registry as dr
 
 from .conftest import DEVICE_ID
@@ -109,6 +113,31 @@ async def test_unknown_device(hass: HomeAssistant, setup_entry: MockConfigEntry)
         await hass.services.async_call(
             DOMAIN, "delete_event", {"device_id": foreign.id, "event_id": "e1"}, blocking=True
         )
+
+
+async def test_actions_need_control_permission(
+    hass: HomeAssistant,
+    setup_entry: MockConfigEntry,
+    mock_api: MagicMock,
+    device_registry: dr.DeviceRegistry,
+    hass_read_only_user: MockUser,
+) -> None:
+    """Test that a user who may only read ZeroMOUSE entities cannot change events."""
+    device_id = _device_id(device_registry, setup_entry)
+    for service, data in (
+        ("rate_event", {"rating": "correct"}),
+        ("delete_event", {}),
+    ):
+        with pytest.raises(Unauthorized):
+            await hass.services.async_call(
+                DOMAIN,
+                service,
+                {"device_id": device_id, "event_id": "e1", **data},
+                blocking=True,
+                context=Context(user_id=hass_read_only_user.id),
+            )
+    mock_api.async_rate_event.assert_not_awaited()
+    mock_api.async_delete_event.assert_not_awaited()
 
 
 async def test_entry_not_loaded(

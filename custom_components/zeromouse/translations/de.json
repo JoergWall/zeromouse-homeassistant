@@ -3,7 +3,7 @@
     "step": {
       "user": {
         "title": "ZeroMOUSE",
-        "description": "Melde dich mit deinem Konto der ZeroMOUSE-App an.",
+        "description": "Melde dich mit deinem Konto der ZeroMOUSE-App an. Diese inoffizielle Integration speichert die Zugangsdaten in Home Assistant, um die Cloud-Sitzung zu erneuern.",
         "data": {
           "email": "E-Mail",
           "password": "Passwort"
@@ -230,7 +230,7 @@
     },
     "delete_event": {
       "name": "Ereignis löschen",
-      "description": "Löscht ein Ereignis samt Bildern wie „Löschen“ in der App.",
+      "description": "Löscht ein Ereignis wie „Löschen“ in der App: Die Cloud markiert es als gelöscht und listet es nicht mehr.",
       "fields": {
         "device_id": {
           "name": "Gerät",

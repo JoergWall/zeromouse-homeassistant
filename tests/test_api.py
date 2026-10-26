@@ -402,16 +402,31 @@ async def test_event_image(api: ZeroMouseApi, mocker: AiohttpClientMocker) -> No
     identity_calls = sum(1 for c in mocker.mock_calls if str(c[1]) == IDENTITY_URL)
 
     assert await api.async_get_event_image("d1", "e1", 4) is None
-    with pytest.raises(ZeroMouseApiError):
+    # Messages end up in logs: they name the picture, not the key with the identity id
+    with pytest.raises(ZeroMouseApiError, match=r"^S3 image e1/5: HTTP 500$"):
         await api.async_get_event_image("d1", "e1", 5)
-    with pytest.raises(ZeroMouseApiError):
+    with pytest.raises(ZeroMouseApiError, match=r"^S3 image e1/6: ClientError$"):
         await api.async_get_event_image("d1", "e1", 6)
     # Credentials were reused
     assert sum(1 for c in mocker.mock_calls if str(c[1]) == IDENTITY_URL) == identity_calls == 2
 
 
 @pytest.mark.parametrize(
-    "kwargs", [{"status": 400, "json": {"__type": "NotAuthorized"}}, {"exc": aiohttp.ClientError()}]
+    "kwargs",
+    [
+        {
+            "status": 400,
+            "json": {
+                "__type": "NotAuthorizedException",
+                "message": "Access to Identity 'eu-central-1:secret-id' is forbidden.",
+            },
+        },
+        {"exc": aiohttp.ClientError()},
+        # Bodies that are no JSON object must not crash the caller
+        {"status": 503, "text": ""},
+        {"status": 502, "text": "<html>Bad Gateway</html>"},
+        {"status": 400, "json": ["unexpected"]},
+    ],
 )
 async def test_identity_errors(
     api: ZeroMouseApi, mocker: AiohttpClientMocker, kwargs: dict
@@ -419,8 +434,10 @@ async def test_identity_errors(
     """Test identity pool failures."""
     await logged_in(api, mocker)
     mocker.post(IDENTITY_URL, **kwargs)
-    with pytest.raises(ZeroMouseApiError):
+    with pytest.raises(ZeroMouseApiError) as err:
         await api.async_get_event_image("d1", "e1", 0)
+    # The AWS message names the identity id; it must not reach the logs
+    assert "secret-id" not in str(err.value)
 
 
 # --------------------------------------------------------------- helpers

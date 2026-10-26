@@ -6,8 +6,8 @@
  * custom:zeromouse-timeline-card  one row per day, one icon per event
  *
  * Both can show which cat it was. The integration matches events with the
- * passages of any cat flap integration (see `correlate` in the README) and also
- * uses ZeroMOUSE's own cat recognition.
+ * passages of a cat flap integration or sensor (see `correlate` in the README;
+ * only tested with Sure Petcare) and also uses ZeroMOUSE's own cat recognition.
  *
  * type: custom:zeromouse-events-card
  * limit: 10
@@ -40,7 +40,7 @@ const LABELS = {
     cancel: "Abbrechen",
     confirm_wrong:
       "Dieses Ereignis als falsch klassifiziert melden? Deine Rückmeldung hilft, die Erkennung zu verbessern.",
-    confirm_delete: "Dieses Ereignis endgültig löschen?",
+    confirm_delete: "Dieses Ereignis löschen? Es verschwindet wie in der App aus der Liste.",
     load_more: "Ältere laden",
     loading: "Lade …",
     filters: "Filter",
@@ -72,7 +72,7 @@ const LABELS = {
     cancel: "Cancel",
     confirm_wrong:
       "Report this event as incorrectly classified? Your feedback helps to improve the detection.",
-    confirm_delete: "Delete this event permanently?",
+    confirm_delete: "Delete this event? Like in the app, it disappears from the list.",
     load_more: "Load older",
     loading: "Loading …",
     filters: "Filters",
@@ -201,6 +201,8 @@ class ZeroMouseEventsCard extends HTMLElement {
     this._notice = {}; // event_id -> message
     this._showFilters = false;
     this._loadToken = 0; // bumped on every new list (filter change, reload)
+    this._atEnd = false; // the server said there are no older events
+    this._orphans = []; // server lists of discarded answers, released with the next call
     this._refreshSeq = 0;
     this._appliedRefresh = 0;
   }
@@ -323,18 +325,37 @@ class ZeroMouseEventsCard extends HTMLElement {
   }
 
   // First page with the current filter (filter changed or first load)
+  // Server lists (cursors) that are no longer needed, to send as `release`
+  _release(extra) {
+    const release = [...this._orphans, extra].filter(Boolean);
+    this._orphans = [];
+    return release.length ? { release } : {};
+  }
+
+  _orphan(cursor) {
+    if (cursor) this._orphans.push(cursor);
+  }
+
   async _reload() {
     if (!this._hass) return;
     const token = ++this._loadToken;
+    // The previous list is no longer needed: let the server forget it
+    const release = this._release(this._cursor);
+    this._cursor = null;
+    this._atEnd = false;
     this._loading = true;
     this._loadingMore = false;
     this._moreError = null;
     this._render();
     try {
-      const result = await this._hass.callWS(this._params());
-      if (token !== this._loadToken) return;
+      const result = await this._hass.callWS(this._params(release));
+      if (token !== this._loadToken) {
+        this._orphan(result.cursor);
+        return;
+      }
       this._setEvents(result.events);
       this._cursor = result.cursor;
+      this._atEnd = !result.cursor;
       this._error = null;
     } catch (err) {
       if (token !== this._loadToken) return;
@@ -358,17 +379,39 @@ class ZeroMouseEventsCard extends HTMLElement {
     }
     const token = this._loadToken;
     const seq = ++this._refreshSeq;
+    // Without a cursor (first list, failed reload) the refresh brings one along;
+    // an existing cursor (also on an empty list) keeps its place
+    const wantCursor = !this._cursor && !this._atEnd;
     try {
-      // Without a list yet this becomes the list (and needs its cursor)
       const result = await this._hass.callWS(
-        this._params({ keep_cursor: !this._events.length })
+        this._params({ keep_cursor: wantCursor, ...this._release() })
       );
-      if (token !== this._loadToken || seq < this._appliedRefresh) return;
+      if (token !== this._loadToken || seq < this._appliedRefresh) {
+        this._orphan(result.cursor);
+        return;
+      }
       this._appliedRefresh = seq;
+      this._error = null;
+      if (wantCursor && !this._cursor && !this._atEnd) {
+        // First list, or recovering from a failed reload: the refresh becomes the
+        // list, so its cursor continues right after the shown events
+        this._setEvents(result.events);
+        this._cursor = result.cursor;
+        this._atEnd = !result.cursor;
+        this._render();
+        return;
+      }
+      this._orphan(result.cursor);
       const byId = new Map(this._events.map((e) => [e.event_id, e]));
       const overlap = result.events.some((e) => byId.has(e.event_id));
-      if (this._events.length && !overlap && result.cursor !== null) {
-        // More new events than one page (e.g. a sleeping tablet): start over
+      const more = result.has_more ?? result.cursor !== null;
+      // New events that do not reach the loaded list while older ones exist: the
+      // events in between would be missing (e.g. a sleeping tablet), so start
+      // over. With events shown this needs a full page, a short one comes from a
+      // rare filter; an empty list that had ended has nothing to keep anyway.
+      const full = result.events.length >= this._config.limit;
+      const ended = !this._events.length && this._atEnd;
+      if (more && !overlap && (full || ended)) {
         this._reload();
         return;
       }
@@ -377,7 +420,6 @@ class ZeroMouseEventsCard extends HTMLElement {
         if (byId.has(e.event_id)) Object.assign(byId.get(e.event_id), e);
         else fresh.push(e);
       }
-      if (!this._events.length) this._cursor = result.cursor;
       this._setEvents([...fresh, ...this._events]);
       this._render();
     } catch (err) {
@@ -397,6 +439,7 @@ class ZeroMouseEventsCard extends HTMLElement {
       const known = new Set(this._events.map((e) => e.event_id));
       this._setEvents([...this._events, ...result.events.filter((e) => !known.has(e.event_id))]);
       this._cursor = result.cursor;
+      this._atEnd = !result.cursor;
     } catch (err) {
       if (token !== this._loadToken) return;
       console.error("zeromouse-events-card", err);
@@ -592,6 +635,8 @@ class ZeroMouseEventsCard extends HTMLElement {
     if (this._config.confirm !== false && confirm) {
       if (this._pending[e.event_id] !== `confirm-${action}`) {
         this._pending[e.event_id] = `confirm-${action}`;
+        // Start on "cancel": a second Enter must not delete or report
+        this._focusNext = `.confirm[data-event="${CSS.escape(e.event_id)}"] .no`;
         this._render();
         return;
       }
@@ -625,7 +670,6 @@ class ZeroMouseEventsCard extends HTMLElement {
   _setFilter(filter) {
     this._filter = filter;
     if (this._config.remember_filter) storageSet(this._storageKey, filter);
-    this._cursor = null;
     // Clear the list so loading and errors of the new filter are visible
     this._setEvents([]);
     this._reload();
@@ -640,7 +684,15 @@ class ZeroMouseEventsCard extends HTMLElement {
     if (el.dataset?.action && el.dataset?.event)
       return `[data-action="${el.dataset.action}"][data-event="${CSS.escape(el.dataset.event)}"]`;
     if (el.classList?.contains("media")) return `.media[data-event="${CSS.escape(el.dataset.event)}"]`;
-    for (const cls of ["more", "reset", "filter-btn", "no", "yes"]) {
+    // Confirmation buttons: whichever exists after the render, the same button
+    // or the action button the confirmation replaces
+    const confirm = el.closest?.(".confirm");
+    if (confirm) {
+      const id = CSS.escape(confirm.dataset.event);
+      const which = el.classList.contains("yes") ? "yes" : "no";
+      return `.confirm[data-event="${id}"] .${which}, .act[data-action="${confirm.dataset.action}"][data-event="${id}"]`;
+    }
+    for (const cls of ["more", "reset", "filter-btn"]) {
       if (el.classList?.contains(cls)) return `.${cls}`;
     }
     return null;
@@ -648,7 +700,10 @@ class ZeroMouseEventsCard extends HTMLElement {
 
   _render() {
     if (!this._config) return;
-    const focus = this._focusKey();
+    // A busy control is disabled and loses the focus: restore it afterwards
+    const current = this._focusNext || this._focusKey();
+    const focus = current || this._focusPending;
+    this._focusNext = null;
     const t = this._t;
     const cfg = this._config;
     const active = this._filterActive();
@@ -657,8 +712,6 @@ class ZeroMouseEventsCard extends HTMLElement {
       body = `<div class="msg">${esc(t.error)}: ${esc(this._error)}</div>`;
     } else if (this._loading && !this._events.length) {
       body = `<div class="msg">${esc(t.loading)}</div>`;
-    } else if (!this._events.length) {
-      body = `<div class="msg">${this._hass ? esc(active ? t.empty_filtered : t.empty) : ""}</div>`;
     } else {
       const banner = this._error
         ? `<div class="banner">${esc(t.error)}: ${esc(this._error)}</div>`
@@ -674,7 +727,14 @@ class ZeroMouseEventsCard extends HTMLElement {
              <span>${esc(moreLabel)}</span>
            </button>`
         : "";
-      body = `${banner}<div class="grid">${this._events.map((e) => this._renderEvent(e)).join("")}${more}</div>`;
+      // Nothing found yet, but older events remain (rare filters): offer "+"
+      const empty = this._events.length
+        ? ""
+        : `<div class="msg">${this._hass ? esc(active ? t.empty_filtered : t.empty) : ""}</div>`;
+      body =
+        empty && !more
+          ? empty
+          : `${banner}${empty}<div class="grid">${this._events.map((e) => this._renderEvent(e)).join("")}${more}</div>`;
     }
     const header =
       cfg.title || cfg.show_filter
@@ -767,7 +827,15 @@ class ZeroMouseEventsCard extends HTMLElement {
     this._bind();
     for (const id of this._frames.keys()) this._showFrame(id);
     this._observeAll();
-    if (focus) this.shadowRoot.querySelector(focus)?.focus();
+    const target = focus && this.shadowRoot.querySelector(focus);
+    if (target?.disabled) {
+      this._focusPending = focus;
+    } else {
+      this._focusPending = null;
+      // A pending focus only returns if the user has not moved on meanwhile
+      const lost = !document.activeElement || document.activeElement === document.body;
+      if (target && (current || lost)) target.focus({ preventScroll: true });
+    }
   }
 
   _renderFilters() {
@@ -822,7 +890,7 @@ class ZeroMouseEventsCard extends HTMLElement {
       : "";
     if (pending === "confirm-wrong" || pending === "confirm-delete") {
       const action = pending.slice(8);
-      return `<div class="confirm" data-event="${esc(e.event_id)}">
+      return `<div class="confirm" data-event="${esc(e.event_id)}" data-action="${action}">
         ${esc(action === "delete" ? t.confirm_delete : t.confirm_wrong)}
         <div class="row"><button class="no">${esc(t.cancel)}</button>
         <button class="yes" data-action="${action}">${esc(action === "delete" ? t.delete : t.wrong)}</button></div>

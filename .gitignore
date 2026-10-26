@@ -1,5 +1,5 @@
 # Personal files, not part of the published integration
-dashboard/cats/
+dashboard/
 
 # Output of tools/zeromouse_cli.py (contains account data and pictures)
 zeromouse_dump.json

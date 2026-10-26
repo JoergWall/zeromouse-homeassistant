@@ -119,10 +119,10 @@ def test_filter_groups_like_app(group: str, members: set[str]) -> None:
         assert not flt.matches(ev(classification))
 
 
-def test_classification_group_fallback() -> None:
-    """Test that unknown values are inconclusive, like in the app."""
-    assert classification_group("free") == "undecidable"
-    assert classification_group(None) == "undecidable"
+def test_classification_group_none() -> None:
+    """Test that values the app lists in no filter have no group."""
+    assert classification_group("free") is None
+    assert classification_group(None) is None
 
 
 async def test_pager_single_device() -> None:
@@ -371,6 +371,43 @@ async def test_ws_keep_cursor_false(
     msg = await ws.receive_json()
     assert [e["event_id"] for e in msg["result"]["events"]] == ["e0", "e1", "e2"]
     assert msg["result"]["cursor"] is None
+    # The card still learns that it may have missed events
+    assert msg["result"]["has_more"] is True
+
+
+async def test_ws_release_previous_list(
+    hass: HomeAssistant, setup_entry: MockConfigEntry, mock_api: MagicMock, hass_ws_client
+) -> None:
+    """Test that a new list can release the caller's previous one."""
+    events = make_events("e", 7, T0)
+    mock_api.async_get_events_page.side_effect = paged_api(events, page=2).async_get_events_page.side_effect
+    ws = await hass_ws_client(hass)
+    await ws.send_json({"id": 1, "type": "zeromouse/events", "limit": 2})
+    first = (await ws.receive_json())["result"]["cursor"]
+    await ws.send_json({"id": 2, "type": "zeromouse/events", "limit": 2, "release": first})
+    second = (await ws.receive_json())["result"]["cursor"]
+    assert second
+    await ws.send_json({"id": 3, "type": "zeromouse/events", "cursor": first})
+    msg = await ws.receive_json()
+    assert not msg["success"]
+    assert msg["error"]["code"] == "invalid_cursor"
+    # Several lists at once, unknown ones are ignored
+    await ws.send_json(
+        {"id": 4, "type": "zeromouse/events", "limit": 2, "release": [second, "gone"]}
+    )
+    assert (await ws.receive_json())["success"]
+    await ws.send_json({"id": 5, "type": "zeromouse/events", "cursor": second})
+    assert (await ws.receive_json())["error"]["code"] == "invalid_cursor"
+
+
+def test_pager_store_release_only_own() -> None:
+    """Test that a user cannot release the list of another user."""
+    store = PagerStore()
+    cursor = store.add(EventPager([], "alice"))
+    store.release(cursor, "bob")
+    assert store.get(cursor, "alice") is not None
+    store.release(cursor, "alice")
+    assert store.get(cursor, "alice") is None
 
 
 async def test_ws_correlation_failure_still_returns_events(

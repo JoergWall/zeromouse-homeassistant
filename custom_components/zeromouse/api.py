@@ -619,9 +619,14 @@ class ZeroMouseApi:
                 data=json.dumps(payload),
                 timeout=_TIMEOUT,
             ) as resp:
-                result: dict[str, Any] = await resp.json(content_type=None)
-                if resp.status >= 400:
-                    raise ZeroMouseApiError(f"Cognito identity {action}: {result}")
+                try:
+                    result = await resp.json(content_type=None)
+                except ValueError:
+                    result = None
+                if resp.status >= 400 or not isinstance(result, dict):
+                    # The AWS message names the identity id: keep only the error type
+                    kind = result.get("__type") if isinstance(result, dict) else None
+                    raise ZeroMouseApiError(f"Cognito identity {action}: HTTP {resp.status} {kind}")
                 return result
         except (aiohttp.ClientError, TimeoutError) as err:
             raise ZeroMouseApiError(f"Cognito identity {action}: {err}") from err
@@ -662,6 +667,8 @@ class ZeroMouseApi:
             f"/images/{image_index}.jpg"
         )
         url = f"https://{IMAGE_BUCKET}.s3.{REGION}.amazonaws.com/{quote(key, safe='/')}"
+        # Messages name the picture without the key (it contains the identity id)
+        name = f"{event_id}/{image_index}"
         request = AWSRequest(method="GET", url=url)
         S3SigV4Auth(credentials, "s3", REGION).add_auth(request)
         try:
@@ -669,13 +676,13 @@ class ZeroMouseApi:
                 URL(url, encoded=True), headers=dict(request.headers), timeout=_TIMEOUT
             ) as resp:
                 if resp.status in (403, 404):
-                    _LOGGER.debug("Image %s not available: HTTP %s", key, resp.status)
+                    _LOGGER.debug("Image %s not available: HTTP %s", name, resp.status)
                     return None
                 if resp.status >= 400:
-                    raise ZeroMouseApiError(f"S3 {key}: HTTP {resp.status}")
+                    raise ZeroMouseApiError(f"S3 image {name}: HTTP {resp.status}")
                 return await resp.read()
         except (aiohttp.ClientError, TimeoutError) as err:
-            raise ZeroMouseApiError(f"S3 {key}: {err}") from err
+            raise ZeroMouseApiError(f"S3 image {name}: {type(err).__name__}") from err
 
 
 def event_image_index(event: dict[str, Any]) -> int | None:

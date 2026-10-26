@@ -57,10 +57,11 @@ Ereignisse mit den Durchgängen abgleicht, die deine Katzenklappe an Home Assist
   entscheidbar“, Blockierdauer bei Beute, Beute blockieren an/aus, Eintritt pro Katze und
   Blockieren unbekannter Katzen.
 - **Statistik**: Beute pro Monat und gesamt.
-- **Welche Katze war es?** Ereignisse lassen sich mit den Durchgängen jeder Katzenklappe
-  verknüpfen, die an Home Assistant meldet (getestet mit Sure Petcare), mit einfachen
-  Tür- oder Vibrationssensoren an Klappen ohne Netzanbindung oder mit der
-  Gesichtserkennung von ZeroMOUSE selbst.
+- **Welche Katze war es?** Ereignisse lassen sich mit den Durchgängen einer Katzenklappe
+  verknüpfen, die an Home Assistant meldet (nur mit Sure Petcare getestet; die Vorlagen
+  für andere Klappen sind ungetestet), mit einfachen Tür- oder Vibrationssensoren an
+  Klappen ohne Netzanbindung (ungetestet) oder mit der Gesichtserkennung von ZeroMOUSE
+  selbst.
 - **Dashboard-Karten**: eine Ereignis-Galerie mit den Filtern der App und unbegrenztem
   Nachladen sowie eine Zeitleiste der letzten Tage.
 - Diagnose, deutsche und englische Übersetzung.
@@ -88,7 +89,7 @@ eine Rolle, wenn du wissen willst, welche Katze es war (siehe
 
 | Katzenklappe | Mit ZeroMOUSE kompatibel ¹ | Durchgänge in Home Assistant | Verknüpfung |
 |---|---|---|---|
-| Sure Petcare: SureFlap DualScan, Microchip Pet Door / Cat Flap Connect | Ja | Ja, mit Hub (Core *surepetcare*, *sureha*, *surepcha*) | **Getestet** |
+| Sure Petcare: SureFlap DualScan, Microchip Pet Door / Cat Flap Connect | Ja | Ja, mit Hub (Core *surepetcare*, *sureha*, *surepcha*) | **Getestet** mit der Core-Integration; *sureha* und *surepcha* ungetestet ² |
 | Sure Petcare: SureFlap Microchip Cat Flap (ohne Hub) | Ja (Händlerangabe) | Nein | ZeroMOUSE-Gesichtserkennung oder Eigenbau-Sensor |
 | PetSafe Microchip Cat Flap (nicht PetPorte; braucht Adapter) | Ja | Nein (keine Netzanbindung) | ZeroMOUSE-Gesichtserkennung oder Eigenbau-Sensor |
 | PetSafe SmartDoor Connected | Nicht gelistet | Ja (*petsafe_extended*) | Vorlage `petsafe`, ungetestet ² |
@@ -98,9 +99,11 @@ eine Rolle, wenn du wissen willst, welche Katze es war (siehe
 
 ¹ Laut FAQ und Produktseiten des Herstellers, Stand Oktober 2026; vor dem Kauf bitte die
 aktuelle Liste auf zeromouse.com prüfen. Die Klappe braucht einen flachen Tunnel.
-² Dem Entwickler stand nur eine Sure-Petcare-Klappe zur Verfügung. Die Vorlagen für
-andere Klappen folgen dem Quellcode ihrer Home-Assistant-Integrationen und wurden nie mit
-echten Ereignissen getestet. Rückmeldungen sind willkommen.
+² Dem Entwickler stand nur eine Sure-Petcare-Klappe zur Verfügung; Ereignisse von
+PetSafe, Cat Mate, Ferplast, OnlyCat oder anderen Klappen und Sensoren hatte er nicht. Die
+Vorlagen für andere Klappen folgen dem Quellcode ihrer Home-Assistant-Integrationen; weder
+sie noch Eigenbau-Sensoren wurden mit echten Ereignissen getestet. Rückmeldungen sind
+willkommen.
 
 ## Voraussetzungen
 
@@ -116,16 +119,25 @@ echten Ereignissen getestet. Rückmeldungen sind willkommen.
 
 ### HACS / Home Assistant Marketplace
 
-1. Bis Home Assistant 2026.10: in HACS ⋮ → *Benutzerdefinierte Repositories* öffnen.
-   Ab Home Assistant 2026.11: *Einstellungen → Marketplace*, ⋮ → *Benutzerdefinierte Repositories*.
-2. `https://github.com/JoergWall/zeromouse-homeassistant` mit der Kategorie *Integration* hinzufügen.
-3. Nach **ZeroMOUSE** suchen, installieren und Home Assistant neu starten.
+[![Open your Home Assistant instance and open this repository in HACS.](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=JoergWall&repository=zeromouse-homeassistant&category=integration)
 
-HACS und der Marketplace können nur öffentliche Repositories installieren.
+Der Knopf öffnet ZeroMOUSE in HACS bzw. ab Home Assistant 2026.11 im Marketplace. Von
+Hand:
+
+1. Bis Home Assistant 2026.10: in HACS ⋮ → *Benutzerdefinierte Repositories* öffnen und
+   `https://github.com/JoergWall/zeromouse-homeassistant` mit der Kategorie *Integration*
+   hinzufügen. Ab Home Assistant 2026.11: *Einstellungen → Marketplace*, oben rechts
+   *Add from link* wählen und `JoergWall/zeromouse-homeassistant` eingeben. Für
+   Repositories außerhalb des Standardkatalogs braucht der Marketplace eine
+   GitHub-Verbindung.
+2. **ZeroMOUSE** öffnen, herunterladen und Home Assistant neu starten.
+
+Sobald ZeroMOUSE im Standardkatalog steht, entfällt Schritt 1.
 
 ### Manuell
 
-1. Das neueste Release (oder das Repository) herunterladen.
+1. Das [neueste Release](https://github.com/JoergWall/zeromouse-homeassistant/releases/latest)
+   (oder das Repository) herunterladen.
 2. `custom_components/zeromouse` nach `<config>/custom_components/zeromouse` kopieren,
    sodass `<config>/custom_components/zeromouse/manifest.json` existiert.
 3. Home Assistant neu starten.
@@ -215,14 +227,14 @@ Karten dieser Integration) zeigen ihn in fünf Gruppen:
 | `undecidable`, `late`, `unknown` | Nicht entscheidbar | `undecidable` und `late` sind als versteckt markiert, werden aber angezeigt |
 | `test` (`hand`) | Hand erkannt | |
 | `out` | Rausgehen erkannt | als versteckt markiert |
-| `free`, andere Werte | Nicht entscheidbar | ohne Filter nicht in der Liste |
+| `free`, andere Werte | Nicht entscheidbar | weder in der App noch in der Galerie-Karte gelistet (kein Filter-Kästchen umfasst sie); die Zeitleiste lässt sie weg |
 
 ## Aktionen
 
 | Aktion | Felder | Beschreibung |
 |---|---|---|
 | `zeromouse.rate_event` | `device_id`, `event_id`, `rating` (`correct` / `incorrect` / `none`) | Gibt dieselbe Rückmeldung wie *Richtig* / *Falsch* in der App. ZeroMOUSE trainiert damit die KI nach. `none` entfernt die Bewertung, wie erneutes Tippen auf den aktiven Knopf in der App. |
-| `zeromouse.delete_event` | `device_id`, `event_id` | Löscht ein Ereignis wie *Löschen* in der App. |
+| `zeromouse.delete_event` | `device_id`, `event_id` | Löscht ein Ereignis wie *Löschen* in der App: Die Cloud markiert es als gelöscht und listet es nicht mehr. |
 
 `device_id` ist das Home-Assistant-Gerät der ZeroMOUSE (Geräteauswahl in der Oberfläche),
 `event_id` stammt aus dem Ereignis `zeromouse_event`, der Ereignis-Entität oder dem Sensor
@@ -247,7 +259,7 @@ data:
   device_id: "8f1c…"                       # Home-Assistant-Geräte-ID (für die Aktionen)
   zeromouse_device_id: "AbCdEf0123456789xyzABC"
   device_name: "Katzenklappe"
-  event_id: "6ab3be5c-…"
+  event_id: "00000000-…"
   classification: prey                    # alle Werte siehe „Letztes Ereignis“
   cat: null                               # Name der Katze, falls ZeroMOUSE sie erkannt hat
   time: "2026-09-23T11:56:12+00:00"
@@ -289,7 +301,7 @@ show_filter: true    # Filter-Knopf
 show_actions: true   # Knöpfe Falsch / Richtig / Löschen
 confirm: true        # vor „Falsch“ und „Löschen“ nachfragen
 show_hidden: false   # „Rausgehen erkannt“ anfangs ebenfalls anhaken
-filter:              # anfangs angehakt: clean, prey, undecidable, hand, out
+filter:              # anfangs angehakte Kästchen; Werte: clean, prey, undecidable, hand, out
   classifications: [prey]  # Standard: alle außer out (mit show_hidden auch out)
   favorites_only: false
 remember_filter: true  # Filter des Nutzers pro Karte und Browser merken
@@ -390,10 +402,10 @@ Zeitfenster für alle Quellen fest.
 
 | Vorlage | Liest | Typische Entität |
 |---|---|---|
-| `sureflap` | jedes neue `since`, Richtung aus `where` (1 = rein, 2 = raus) | Tier-`binary_sensor` von Sure Petcare (Core-Integration, *sureha*) |
-| `sureflap_state` | jedes neue `since`, Richtung aus dem Zustand (an = drinnen) | Präsenzsensor von *surepcha* |
-| `petsafe` | Ereignis-Entität, Zeit aus `occurred_at`, `pet_entered` / `pet_exited` | Ereignis-Entität „‹Tier› Activity“ von *petsafe_extended* |
-| `onlycat` | `timestamp`, Richtung `INWARD` / `OUTWARD`; pro Katze einen `filter` auf `rfidCode` | `binary_sensor` „Flap event“ von OnlyCat |
+| `sureflap` | jedes neue `since`, Richtung aus `where` (1 = rein, 2 = raus) | Tier-`binary_sensor` von Sure Petcare (Core-Integration: getestet; *sureha*: ungetestet) |
+| `sureflap_state` | jedes neue `since`, Richtung aus dem Zustand (an = drinnen) | Präsenzsensor von *surepcha* (ungetestet) |
+| `petsafe` | Ereignis-Entität, Zeit aus `occurred_at`, `pet_entered` / `pet_exited` | Ereignis-Entität „‹Tier› Activity“ von *petsafe_extended* (ungetestet) |
+| `onlycat` | `timestamp`, Richtung `INWARD` / `OUTWARD`; pro Katze einen `filter` auf `rfidCode` | `binary_sensor` „Flap event“ von OnlyCat (ungetestet) |
 | `state` | jede Zustandsänderung; an/home = rein, aus/not_home = raus | Präsenzsensoren, Tür-/Kontaktsensoren |
 | `event` | jedes Ereignis einer Ereignis-Entität, Richtung aus `event_type` | Ereignis-Entitäten von ESPHome oder Zigbee |
 | `attribute` | eigenes `time_attribute` / `direction_attribute` | alles andere |
@@ -619,7 +631,7 @@ unter *Einstellungen → Geräte & Dienste → Entitäten*.
 | Ereignisse kommen nur minütlich | Die Echtzeit-Verbindung kam nicht zustande. Die Abfrage funktioniert trotzdem; mit Debug-Logging siehst du den Grund. |
 | Keine Katze in den Karten | Die Entität unter *Entwicklerwerkzeuge → Zustände* prüfen: Ändert sich ihr Verlauf bei jedem Durchgang? Eine ausdrückliche `preset` versuchen. Der Recorder muss aktiv sein und darf die Entität nicht ausschließen. |
 | Viele *unbekannte* Ereignisse | Siehe Hinweis unter [Verknüpfen](#ereignisse-mit-der-katzenklappe-verknüpfen). Vergrößere `window_after` nur, wenn deine Klappen-Integration selten abfragt. |
-| Nach **+** beginnt die Liste wieder von vorn | Home Assistant wurde zwischendurch neu gestartet und hat vergessen, wo die Liste stand; die Karte lädt sie neu. |
+| Nach **+** beginnt die Liste wieder von vorn | Home Assistant hat vergessen, wo die Liste stand: Es wurde neu gestartet, die Liste blieb eine Stunde unbenutzt, oder derselbe Benutzer hat inzwischen viele andere Listen geöffnet. Die Karte lädt sie neu. |
 
 **Debug-Logging**
 
@@ -630,20 +642,30 @@ logger:
 ```
 
 **Diagnose**: *Einstellungen → Geräte & Dienste → ZeroMOUSE → ⋮ → Diagnose herunterladen*
-liefert die Rohdaten aller Geräte. E-Mail, Passwort, Owner- und Identity-IDs sowie
-WLAN-Namen werden entfernt. Bitte hänge die Datei an Fehlerberichte an.
+liefert die Daten aller Geräte. E-Mail, Passwort, Owner-, Identity- und Geräte-IDs,
+Geräte- und Katzennamen werden entfernt; vom Device Shadow sind nur die Einstellungen
+enthalten, die die Integration nutzt (andere Schlüssel nur mit Namen). Das eigene
+Debug-Log der Integration (`custom_components.zeromouse`) enthält keine Zugriffstoken;
+Debug-Logging für alle Bibliotheken (`default: debug` oder `botocore`) bitte nicht
+einschalten, es protokolliert signierte Bildabrufe samt Sitzungstoken. Bitte hänge die
+Datei an Fehlerberichte an.
 
 ## Datenschutz und Sicherheit
 
 - Home Assistant spricht nur mit der ZeroMOUSE-Cloud bei AWS (Cognito, AppSync, API
   Gateway und S3 in `eu-central-1`), genau wie die App. Andere Dienste werden nicht
   kontaktiert.
-- Bilder werden bei Bedarf geladen und nur im Arbeitsspeicher gehalten. Der Bild-Endpunkt
-  `/api/zeromouse/image/…` verlangt einen angemeldeten Home-Assistant-Benutzer.
+- Bilder werden bei Bedarf geladen und auf dem Home-Assistant-Server nur im
+  Arbeitsspeicher gehalten; Browser dürfen sie bis zu 7 Tage zwischenspeichern. Der
+  Bild-Endpunkt `/api/zeromouse/image/…` verlangt einen angemeldeten
+  Home-Assistant-Benutzer.
 - Die Dashboard-Karten lesen Daten über die WebSocket-API von Home Assistant mit den
   Rechten des angemeldeten Benutzers. Die Katzen-Zuordnung liest nur Entitäten, die der
   Benutzer lesen darf.
-- *Löschen* entfernt das Ereignis in der ZeroMOUSE-Cloud, wie in der App.
+- *Löschen* und die Bewertungen ändern das Ereignis in der ZeroMOUSE-Cloud, wie in der
+  App. Die Aktionen brauchen das Recht, ZeroMOUSE-Entitäten zu steuern.
+- Die Zugangsdaten liegen in der Home-Assistant-Konfiguration (und ihren Backups), um
+  die Cloud-Sitzung zu erneuern, wie bei anderen Cloud-Integrationen.
 
 ## Entfernen
 

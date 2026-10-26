@@ -3,7 +3,7 @@
     "step": {
       "user": {
         "title": "ZeroMOUSE",
-        "description": "Sign in with your ZeroMOUSE app account.",
+        "description": "Sign in with your ZeroMOUSE app account. This unofficial integration stores the credentials in Home Assistant to renew the cloud session.",
         "data": {
           "email": "Email",
           "password": "Password"
@@ -230,7 +230,7 @@
     },
     "delete_event": {
       "name": "Delete event",
-      "description": "Deletes an event with its pictures like \"Delete\" in the app.",
+      "description": "Deletes an event like \"Delete\" in the app: the cloud marks it as deleted and no longer lists it.",
       "fields": {
         "device_id": {
           "name": "Device",

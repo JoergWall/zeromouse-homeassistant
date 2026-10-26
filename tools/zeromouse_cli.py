@@ -96,7 +96,8 @@ async def main(args: argparse.Namespace) -> None:
     async with aiohttp.ClientSession() as session:
         api = api_mod.ZeroMouseApi(session, email, password)
         await api.async_login()
-        print(f"Logged in, ownerID={api.owner_id}", file=sys.stderr)
+        owner = api.owner_id or ""
+        print(f"Logged in, ownerID={owner[:4]}…", file=sys.stderr)
         devices = await api.async_get_devices()
         device_id = args.device or (devices[0]["deviceID"] if devices else None)
 
@@ -246,6 +247,9 @@ if __name__ == "__main__":
     parser.add_argument("-v", "--verbose", action="store_true")
     parsed = parser.parse_args()
     logging.basicConfig(level=logging.DEBUG if parsed.verbose else logging.WARNING)
+    # Their debug output contains signed requests and session tokens
+    for noisy in ("botocore", "aiohttp"):
+        logging.getLogger(noisy).setLevel(logging.INFO)
     try:
         asyncio.run(main(parsed))
     except KeyboardInterrupt:

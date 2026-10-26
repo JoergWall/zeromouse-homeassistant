@@ -20,8 +20,8 @@ from its history are supported:
 ``filter`` limits a source to recorded states whose attributes have given values,
 e.g. one cat (RFID) on a flap-wide entity.
 
-Only the Sure Petcare presets were tested with real data. The PetSafe and OnlyCat
-presets follow the source code of those integrations.
+Only the ``sureflap`` preset with the core Sure Petcare integration was tested with
+real data. The other presets follow the source code of those integrations.
 """
 
 from __future__ import annotations
@@ -38,7 +38,7 @@ from homeassistant.const import STATE_UNAVAILABLE, STATE_UNKNOWN
 from homeassistant.core import HomeAssistant, State
 from homeassistant.util import dt as dt_util
 
-from .const import CLASSIFICATION_GROUPS, classification_group
+from .const import classification_group
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -110,9 +110,8 @@ EXPECTED_DIRECTION = {
 
 def _expected_direction(classification: object) -> str | None:
     """Return the direction a passage needs, None for unknown classifications."""
-    if not any(classification in group for group in CLASSIFICATION_GROUPS.values()):
-        return None
-    return EXPECTED_DIRECTION[classification_group(classification)]
+    group = classification_group(classification)
+    return EXPECTED_DIRECTION[group] if group else None
 
 
 DEFAULT_WINDOW_BEFORE = 60

@@ -6,6 +6,7 @@ from collections import OrderedDict
 import hashlib
 import logging
 from pathlib import Path
+import re
 from typing import Any
 
 from aiohttp import web
@@ -45,6 +46,8 @@ _LOGGER = logging.getLogger(__name__)
 STATIC_URL = "/zeromouse_static"
 CARD_FILE = "zeromouse-events-card.js"
 IMAGE_CACHE_SIZE = 400
+# Event ids are UUIDs; anything else never reaches the S3 key
+_EVENT_ID = re.compile(r"[0-9A-Za-z-]{1,64}")
 DATA_PAGERS = f"{DOMAIN}_pagers"
 
 
@@ -140,6 +143,8 @@ WS_EVENTS_SCHEMA: dict[Any, Any] = (
         vol.Optional("cursor"): cv.string,
         # False: the caller will not load more (e.g. a refresh), keep no cursor
         vol.Optional("keep_cursor", default=True): cv.boolean,
+        # The caller's previous lists, no longer needed
+        vol.Optional("release"): vol.All(cv.ensure_list, [cv.string]),
         vol.Optional("device_id"): cv.string,
         # Only events after this time; the list ends there
         vol.Optional("since"): cv.datetime,
@@ -173,6 +178,8 @@ async def ws_events(
             return
 
     store: PagerStore = hass.data.setdefault(DATA_PAGERS, PagerStore())
+    for old in msg.get("release", []):
+        store.release(old, user_id)
     cursor: str | None = msg.get("cursor")
     if cursor:
         pager = store.get(cursor, user_id)
@@ -208,7 +215,8 @@ async def ws_events(
         pager.give_back(page)
         raise
 
-    result: dict[str, Any] = {"events": events, "cursor": None}
+    # has_more also without cursor: a refresh can see that it missed events
+    result: dict[str, Any] = {"events": events, "cursor": None, "has_more": pager.has_more}
     if pager.has_more and (cursor or msg["keep_cursor"]):
         result["cursor"] = cursor or store.add(pager)
     elif cursor:
@@ -291,6 +299,8 @@ class ZeroMouseImageView(HomeAssistantView):
         coordinator = _coordinators(request.app[KEY_HASS]).get(entry_id)
         if coordinator is None or device_id not in coordinator.data:
             return web.Response(status=404)
+        if not _EVENT_ID.fullmatch(event_id):
+            return web.Response(status=400)
         try:
             key = (device_id, event_id, int(index))
         except ValueError:

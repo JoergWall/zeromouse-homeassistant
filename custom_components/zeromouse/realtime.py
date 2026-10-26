@@ -7,6 +7,7 @@ import base64
 from collections.abc import Awaitable, Callable
 import json
 import logging
+import re
 import time
 from typing import Any
 import uuid
@@ -20,6 +21,8 @@ _LOGGER = logging.getLogger(__name__)
 
 # Access tokens live one hour; reconnect with a fresh one before that.
 _RECONNECT_AFTER = 45 * 60
+# The connection URL carries the access token in its "header" parameter
+_REDACT_HEADER = re.compile(r"header=[^&\s'\"]*")
 
 
 class ZeroMouseRealtime:
@@ -46,7 +49,12 @@ class ZeroMouseRealtime:
             except asyncio.CancelledError:
                 raise
             except Exception as err:  # noqa: BLE001
-                _LOGGER.debug("Realtime connection failed: %r", err)
+                # Errors can quote the connection URL, which carries the token
+                _LOGGER.debug(
+                    "Realtime connection failed: %s: %s",
+                    type(err).__name__,
+                    _REDACT_HEADER.sub("header=<redacted>", str(err)),
+                )
             if time.monotonic() - started > 60:
                 backoff = 5
             await asyncio.sleep(backoff)

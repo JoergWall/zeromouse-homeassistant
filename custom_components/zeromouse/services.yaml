@@ -7,7 +7,7 @@ rate_event:
           integration: zeromouse
     event_id:
       required: true
-      example: "6ab3be5c-aa61-9b3a-38bb-3a7f3d4b0da0"
+      example: "00000000-0000-0000-0000-000000000000"
       selector:
         text:
     rating:
@@ -29,6 +29,6 @@ delete_event:
           integration: zeromouse
     event_id:
       required: true
-      example: "6ab3be5c-aa61-9b3a-38bb-3a7f3d4b0da0"
+      example: "00000000-0000-0000-0000-000000000000"
       selector:
         text:

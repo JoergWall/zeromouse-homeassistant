@@ -1,7 +1,7 @@
 # Pinned to a known-good combination (Home Assistant 2026.10.4); update together
 pytest-homeassistant-custom-component==0.13.375
-# The integration depends on "frontend", which needs the frontend package in tests
-home-assistant-frontend==20260826.7
+# The integration depends on "frontend"; same version as Home Assistant 2026.10.4
+home-assistant-frontend==20260930.5
 pycognito>=2024.5.1
-mypy
-ruff
+mypy==2.4.0
+ruff==0.17.2

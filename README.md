@@ -56,9 +56,10 @@ cat flap reports to Home Assistant.
   events, prey block duration, prey blocking on/off, per-cat entry permission and
   blocking of unknown cats.
 - **Statistics**: prey per month and in total.
-- **Which cat was it?** Events can be matched with the passages of any cat flap that
-  reports to Home Assistant (tested with Sure Petcare), with plain door or vibration
-  sensors on flaps without connectivity, or with ZeroMOUSE's own face detection.
+- **Which cat was it?** Events can be matched with the passages of a cat flap that
+  reports to Home Assistant (only tested with Sure Petcare; the presets for other flaps
+  are untested), with plain door or vibration sensors on flaps without connectivity
+  (untested), or with ZeroMOUSE's own face detection.
 - **Dashboard cards**: an event gallery with the app's filters and unlimited
   "load more", and a timeline of the last days.
 - Diagnostics, German and English translations.
@@ -85,7 +86,7 @@ know which cat it was (see [Matching events with your cat flap](#matching-events
 
 | Cat flap | Compatible with ZeroMOUSE ¹ | Passages in Home Assistant | Matching |
 |---|---|---|---|
-| Sure Petcare: SureFlap DualScan, Microchip Pet Door / Cat Flap Connect | Yes | Yes, with a hub (core *surepetcare*, *sureha*, *surepcha*) | **Tested** |
+| Sure Petcare: SureFlap DualScan, Microchip Pet Door / Cat Flap Connect | Yes | Yes, with a hub (core *surepetcare*, *sureha*, *surepcha*) | **Tested** with the core integration; *sureha* and *surepcha* untested ² |
 | Sure Petcare: SureFlap Microchip Cat Flap (without hub) | Yes (dealer statement) | No | ZeroMOUSE face detection or DIY sensor |
 | PetSafe Microchip Cat Flap (not PetPorte; needs an adapter) | Yes | No (no connectivity) | ZeroMOUSE face detection or DIY sensor |
 | PetSafe SmartDoor Connected | Not listed | Yes (*petsafe_extended*) | Preset `petsafe`, untested ² |
@@ -95,9 +96,10 @@ know which cat it was (see [Matching events with your cat flap](#matching-events
 
 ¹ According to the manufacturer's FAQ and product pages as of October 2026; please check
 the current list on zeromouse.com before buying. A flap needs a flat tunnel.
-² The developer only had a Sure Petcare flap. The presets for other flaps follow the
-source code of their Home Assistant integrations and were never tested with real
-events. Feedback is welcome.
+² The developer only owns a Sure Petcare flap and had no event data from PetSafe,
+Cat Mate, Ferplast, OnlyCat or any other flap or sensor. The presets for other flaps
+follow the source code of their Home Assistant integrations; neither they nor DIY sensor
+setups were tested with real events. Feedback is welcome.
 
 ## Requirements
 
@@ -113,16 +115,24 @@ events. Feedback is welcome.
 
 ### HACS / Home Assistant Marketplace
 
-1. Home Assistant 2026.10 and older: in HACS open ⋮ → *Custom repositories*.
-   Home Assistant 2026.11 and newer: open *Settings → Marketplace*, ⋮ → *Custom repositories*.
-2. Add `https://github.com/JoergWall/zeromouse-homeassistant` with the category *Integration*.
-3. Search for **ZeroMOUSE**, install it and restart Home Assistant.
+[![Open your Home Assistant instance and open this repository in HACS.](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=JoergWall&repository=zeromouse-homeassistant&category=integration)
 
-HACS and the Marketplace can only install public repositories.
+The button opens ZeroMOUSE in HACS or, from Home Assistant 2026.11 on, in the
+Marketplace. To add the repository by hand:
+
+1. Home Assistant 2026.10 and older: in HACS open ⋮ → *Custom repositories* and add
+   `https://github.com/JoergWall/zeromouse-homeassistant` with the category *Integration*.
+   Home Assistant 2026.11 and newer: open *Settings → Marketplace*, choose *Add from link*
+   (top right) and enter `JoergWall/zeromouse-homeassistant`. The Marketplace needs a
+   GitHub connection for repositories outside its default catalog.
+2. Open **ZeroMOUSE**, download it and restart Home Assistant.
+
+Step 1 is no longer needed once ZeroMOUSE is listed in the default catalog.
 
 ### Manual
 
-1. Download the latest release (or the repository).
+1. Download the [latest release](https://github.com/JoergWall/zeromouse-homeassistant/releases/latest)
+   (or the repository).
 2. Copy `custom_components/zeromouse` to `<config>/custom_components/zeromouse` so that
    `<config>/custom_components/zeromouse/manifest.json` exists.
 3. Restart Home Assistant.
@@ -212,14 +222,14 @@ cards of this integration) show it in five groups:
 | `undecidable`, `late`, `unknown` | Inconclusive | `undecidable` and `late` are marked hidden but still listed |
 | `test` (`hand`) | Hand detected | |
 | `out` | Leaving detected | marked hidden |
-| `free`, other values | Inconclusive | not listed without a filter |
+| `free`, other values | Inconclusive | listed neither by the app nor by the gallery card (no filter box covers them); the timeline leaves them out |
 
 ## Actions
 
 | Action | Fields | Description |
 |---|---|---|
 | `zeromouse.rate_event` | `device_id`, `event_id`, `rating` (`correct` / `incorrect` / `none`) | Gives the same feedback as *Right* / *Wrong* in the app. ZeroMOUSE uses it to retrain the AI. `none` removes the rating, like tapping the active button again in the app. |
-| `zeromouse.delete_event` | `device_id`, `event_id` | Deletes an event like *Delete* in the app. |
+| `zeromouse.delete_event` | `device_id`, `event_id` | Deletes an event like *Delete* in the app: the cloud marks it as deleted and no longer lists it. |
 
 `device_id` is the Home Assistant device of the ZeroMOUSE (device selector in the UI),
 `event_id` comes from the `zeromouse_event` bus event, the event entity or the *Last
@@ -244,7 +254,7 @@ data:
   device_id: "8f1c…"                       # Home Assistant device id (for the actions)
   zeromouse_device_id: "AbCdEf0123456789xyzABC"
   device_name: "Cat flap"
-  event_id: "6ab3be5c-…"
+  event_id: "00000000-…"
   classification: prey                    # see "Last event" for all values
   cat: null                               # cat name if ZeroMOUSE recognised it
   time: "2026-09-23T11:56:12+00:00"
@@ -284,7 +294,7 @@ show_filter: true    # filter button
 show_actions: true   # wrong / right / delete buttons
 confirm: true        # ask before "wrong" and "delete"
 show_hidden: false   # also check "Leaving detected" at first
-filter:              # boxes checked at first: clean, prey, undecidable, hand, out
+filter:              # boxes checked at first; values: clean, prey, undecidable, hand, out
   classifications: [prey]  # default: all but out (out too with show_hidden)
   favorites_only: false
 remember_filter: true  # remember the user's filter per card and browser
@@ -383,10 +393,10 @@ window for all sources.
 
 | Preset | Reads | Typical entity |
 |---|---|---|
-| `sureflap` | every new `since`, direction from `where` (1 = in, 2 = out) | Sure Petcare pet `binary_sensor` (core integration, *sureha*) |
-| `sureflap_state` | every new `since`, direction from the state (on = inside) | *surepcha* presence sensor |
-| `petsafe` | event entity, time from `occurred_at`, `pet_entered` / `pet_exited` | *petsafe_extended* "‹pet› Activity" event entity |
-| `onlycat` | `timestamp`, direction `INWARD` / `OUTWARD`; add a `filter` on `rfidCode` per cat | OnlyCat "Flap event" `binary_sensor` |
+| `sureflap` | every new `since`, direction from `where` (1 = in, 2 = out) | Sure Petcare pet `binary_sensor` (core integration: tested; *sureha*: untested) |
+| `sureflap_state` | every new `since`, direction from the state (on = inside) | *surepcha* presence sensor (untested) |
+| `petsafe` | event entity, time from `occurred_at`, `pet_entered` / `pet_exited` | *petsafe_extended* "‹pet› Activity" event entity (untested) |
+| `onlycat` | `timestamp`, direction `INWARD` / `OUTWARD`; add a `filter` on `rfidCode` per cat | OnlyCat "Flap event" `binary_sensor` (untested) |
 | `state` | every state change; on/home = in, off/not_home = out | presence sensors, door/contact sensors |
 | `event` | every event of an event entity, direction from `event_type` | ESPHome or Zigbee event entities |
 | `attribute` | your own `time_attribute` / `direction_attribute` | anything else |
@@ -606,7 +616,7 @@ Entity IDs in the examples depend on your language and device name; check them u
 | Events arrive only every minute | The realtime subscription could not connect. Polling still works; enable debug logging to see why. |
 | No cat is shown in the cards | Check the entity in *Developer tools → States*: does its history change on every passage? Try an explicit `preset`. The recorder must be enabled and must not exclude the entity. |
 | Many *unknown* events | See the note in [Matching events](#matching-events-with-your-cat-flap). Increase `window_after` only if your flap integration polls slowly. |
-| The list starts again from the top after **+** | Home Assistant was restarted meanwhile and forgot where the list was; the card reloads it. |
+| The list starts again from the top after **+** | Home Assistant forgot where the list was: it was restarted, the list was not used for an hour, or the same user opened many other lists meanwhile. The card reloads it. |
 
 **Debug logging**
 
@@ -617,19 +627,27 @@ logger:
 ```
 
 **Diagnostics**: *Settings → Devices & services → ZeroMOUSE → ⋮ → Download diagnostics*
-returns the raw data of all devices. Email, password, owner and identity IDs and Wi-Fi
-network names are removed. Please attach it to bug reports.
+returns the data of all devices. Email, password, owner, identity and device IDs, device
+and cat names are removed; of the device shadow only the settings the integration uses
+are included (other keys by name only). The integration's own debug log
+(`custom_components.zeromouse`) leaves out access tokens; do not enable debug logging
+for all libraries (`default: debug` or `botocore`), which logs signed picture requests
+with a session token. Please attach the file to bug reports.
 
 ## Privacy and security
 
 - Home Assistant talks only to the ZeroMOUSE cloud on AWS (Cognito, AppSync, API Gateway
   and S3 in `eu-central-1`), exactly like the app. No other service is contacted.
-- Pictures are fetched on demand and kept only in memory. The image endpoint
+- Pictures are fetched on demand and kept only in memory on the Home Assistant server;
+  browsers may cache them for up to 7 days. The image endpoint
   `/api/zeromouse/image/…` requires a signed-in Home Assistant user.
 - The dashboard cards read data through the Home Assistant websocket API with the
   permissions of the signed-in user. Cat matching reads only entities the user is
   allowed to read.
-- *Delete* removes the event in the ZeroMOUSE cloud, like in the app.
+- *Delete* and the ratings change the event in the ZeroMOUSE cloud, like in the app. The
+  actions need the permission to control ZeroMOUSE entities.
+- The credentials are stored in the Home Assistant configuration (and its backups) to
+  renew the cloud session, like for other cloud integrations.
 
 ## Removal
 
@@ -711,8 +729,9 @@ ZEROMOUSE_EMAIL=you@example.com python tools/zeromouse_cli.py dump
 
 Other commands: `devices`, `shadow`, `events`, `raw-events`, `schema`, `stats`, `user`,
 `image`, `watch`, `set-entry <0-3>`, `set-undecidable <0-2>`. The password is asked
-interactively; output files are listed in `.gitignore` because they contain account
-data.
+interactively (or read from `ZEROMOUSE_PASSWORD`; avoid that on shared machines, it
+ends up in the shell history). The output contains account data: do not share it, and
+keep the default file names, which `.gitignore` covers.
 
 ## License and trademarks
 

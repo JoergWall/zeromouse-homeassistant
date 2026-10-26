@@ -68,7 +68,8 @@ CLASSIFICATIONS: list[str] = [
 ]
 
 # The app shows and filters events in five groups (app 1.14.19, filter dialog
-# and event titles). Everything else counts as "undecidable" there.
+# and event titles). Other values ("free") are in no group: the app lists them
+# in no filter and titles them "undecidable".
 CLASSIFICATION_GROUPS: dict[str, frozenset[str]] = {
     "clean": frozenset({"clean", "early"}),  # Keine Beute erkannt
     "prey": frozenset({"prey"}),  # Beute erkannt
@@ -78,9 +79,9 @@ CLASSIFICATION_GROUPS: dict[str, frozenset[str]] = {
 }
 
 
-def classification_group(classification: object) -> str:
-    """Return the app's group of a raw classification."""
+def classification_group(classification: object) -> str | None:
+    """Return the app's group of a raw classification, None if it has none."""
     for group, members in CLASSIFICATION_GROUPS.items():
         if classification in members:
             return group
-    return "undecidable"
+    return None

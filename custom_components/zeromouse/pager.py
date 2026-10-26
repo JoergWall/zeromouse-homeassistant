@@ -30,7 +30,7 @@ PAGE_SIZE = 100
 # Upper bound of cloud requests for one page of results (rare filters)
 MAX_REQUESTS_PER_CALL = 20
 MAX_PAGERS = 64
-MAX_PAGERS_PER_USER = 8
+MAX_PAGERS_PER_USER = 16
 PAGER_TTL = 3600  # seconds
 
 _OLDEST = datetime.min.replace(tzinfo=UTC)
@@ -196,3 +196,9 @@ class PagerStore:
     def remove(self, cursor: str) -> None:
         """Forget a finished pager."""
         self._pagers.pop(cursor, None)
+
+    def release(self, cursor: str, user_id: str | None) -> None:
+        """Forget a pager its user no longer needs."""
+        pager = self._pagers.get(cursor)
+        if pager is not None and pager.user_id == user_id:
+            del self._pagers[cursor]

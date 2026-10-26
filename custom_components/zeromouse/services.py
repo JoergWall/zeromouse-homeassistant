@@ -10,6 +10,7 @@ from homeassistant.config_entries import ConfigEntryState
 from homeassistant.core import HomeAssistant, ServiceCall, callback
 from homeassistant.exceptions import HomeAssistantError, ServiceValidationError
 from homeassistant.helpers import config_validation as cv, device_registry as dr
+from homeassistant.helpers.service import verify_domain_control
 
 from .api import RATING_CORRECT, RATING_INCORRECT, ZeroMouseError
 from .const import DOMAIN
@@ -57,6 +58,7 @@ def _resolve(hass: HomeAssistant, device_id: str) -> tuple[ZeroMouseCoordinator,
     )
 
 
+@verify_domain_control(DOMAIN)
 async def _async_rate_event(call: ServiceCall) -> None:
     coordinator, cloud_id = _resolve(call.hass, call.data[ATTR_DEVICE_ID])
     try:
@@ -72,6 +74,7 @@ async def _async_rate_event(call: ServiceCall) -> None:
         ) from err
 
 
+@verify_domain_control(DOMAIN)
 async def _async_delete_event(call: ServiceCall) -> None:
     coordinator, cloud_id = _resolve(call.hass, call.data[ATTR_DEVICE_ID])
     try:

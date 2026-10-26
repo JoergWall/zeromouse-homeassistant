@@ -303,10 +303,44 @@ async def test_diagnostics(
     """Test that diagnostics redact personal data."""
     diag = await get_diagnostics_for_config_entry(hass, hass_client, setup_entry)
     assert diag["entry"] == {CONF_EMAIL: "**REDACTED**", CONF_PASSWORD: "**REDACTED**"}
-    device = diag["devices"][DEVICE_ID]
+    assert DEVICE_ID not in str(diag)
+    device = diag["devices"]["device_1"]
     assert device["flap"]["ownerID"] == "**REDACTED**"
+    assert device["flap"]["name"] == "**REDACTED**"
     assert device["flap"]["catClusters"][0]["embedding"] == "<1 values>"
-    assert device["shadow"]["state"]["reported"]["system"]["metricWifiRSSI"] == -61
+    assert device["flap"]["catClusters"][0]["name"] == "**REDACTED**"
+    shadow = device["shadow"]
+    assert shadow["reported"]["system"]["metricWifiRSSI"] == -61
+    assert shadow["desired"] == {"system": {"undecidableMode": 2}}
+    assert shadow["connected"] is True
+    assert shadow["other_keys"] == []
+
+
+def test_diagnostics_shadow_allowlist() -> None:
+    """Test that unknown shadow values are listed by name only."""
+    from custom_components.zeromouse.diagnostics import _shadow
+
+    result = _shadow(
+        {
+            "state": {
+                "reported": {
+                    "system": {"kkzmBlockModeIn": 1, "wifiSSID": "Home"},
+                    "network": {"ip": "192.168.1.2"},
+                    "flag": True,
+                },
+            },
+            "metadata": {"x": 1},
+        }
+    )
+    assert result["reported"] == {"system": {"kkzmBlockModeIn": 1}}
+    assert result["desired"] == {}
+    assert result["other_keys"] == [
+        "metadata",
+        "reported.flag",
+        "reported.network.ip",
+        "reported.system.wifiSSID",
+    ]
+    assert "Home" not in str(result) and "192.168" not in str(result)
 
 
 async def test_realtime_event_triggers_refresh(
@@ -355,6 +389,10 @@ async def test_image_view_errors(
     client = await hass_client()
     base = f"/api/zeromouse/image/{setup_entry.entry_id}/{DEVICE_ID}"
     assert (await client.get(f"{base}/e1/x")).status == 400
+    # Only event ids reach the S3 key
+    assert (await client.get(f"{base}/e1%2F..%2Fx/1")).status in (400, 404)
+    assert (await client.get(f"{base}/e1.jpg/1")).status == 400
+    mock_api.async_get_event_image.assert_not_awaited()
     mock_api.async_get_event_image.return_value = None
     assert (await client.get(f"{base}/e1/9")).status == 404
     mock_api.async_get_event_image.side_effect = ZeroMouseApiError("x")

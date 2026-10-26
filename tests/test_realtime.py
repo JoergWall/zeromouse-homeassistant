@@ -108,6 +108,26 @@ async def test_run_retries_with_backoff() -> None:
     assert sleeps == [5, 10, 20]
 
 
+async def test_run_does_not_log_the_token(caplog: pytest.LogCaptureFixture) -> None:
+    """Test that a failed handshake does not write the token-bearing URL to the log."""
+    realtime, _, _ = make_realtime(FakeWs([]))
+    url = "wss://x/graphql?header=eyJBdXRob3JpemF0aW9uIjoic2VjcmV0In0=&payload=e30="
+    error = RuntimeError(f"401, message='Invalid response status', url='{url}'")
+
+    async def fake_sleep(delay: float) -> None:
+        raise asyncio.CancelledError
+
+    caplog.set_level("DEBUG", logger="custom_components.zeromouse.realtime")
+    with (
+        patch.object(realtime, "_run_once", AsyncMock(side_effect=error)),
+        patch("custom_components.zeromouse.realtime.asyncio.sleep", fake_sleep),
+        pytest.raises(asyncio.CancelledError),
+    ):
+        await realtime.run()
+    assert "header=<redacted>&payload" in caplog.text
+    assert "eyJBdXRo" not in caplog.text
+
+
 async def test_run_propagates_cancel() -> None:
     """Test that cancelling stops the loop."""
     realtime, _, _ = make_realtime(FakeWs([]))

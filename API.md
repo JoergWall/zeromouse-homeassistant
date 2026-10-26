@@ -1,9 +1,13 @@
 # ZeroMOUSE Cloud-API (reverse engineered)
 
-Quelle: `ZeroMouseRn.app` (iOS/React-Native, Bundle-ID `de.zeromouse.app`), Hermes-Bytecode v98
-(`main.jsbundle`), disassembliert/dekompiliert mit [hermes-dec](https://github.com/P1sec/hermes-dec).
-Stand der App: Build vom 2025-08-31; Bewerten/Löschen/Filter geprüft mit App 1.14.19
-(Oktober 2026).
+> [!NOTE]
+> Inoffizielle Dokumentation ohne Verbindung zu ZeroMOUSE, entstanden, um ZeroMOUSE mit
+> Home Assistant nutzen zu können. Die API ist nicht öffentlich dokumentiert und kann sich
+> jederzeit ändern. *Unofficial notes, not affiliated with ZeroMOUSE, written to make
+> ZeroMOUSE work with Home Assistant. The API is undocumented and may change at any time.*
+
+Quelle: Analyse der ZeroMOUSE-App (React Native), Stand 2025-08-31; Bewerten, Löschen und
+Filter geprüft mit App 1.14.19 (Oktober 2026).
 
 Das Backend ist ein klassischer **AWS Amplify**-Stack in `eu-central-1`:
 
@@ -16,7 +20,6 @@ Das Backend ist ein klassischer **AWS Amplify**-Stack in `eu-central-1`:
 | AppSync Realtime | `wss://f36gc6o7jnewxe37dhn3fochza.appsync-realtime-api.eu-central-1.amazonaws.com/graphql` |
 | REST (API Gateway) | `https://4oj9bcxedi.execute-api.eu-central-1.amazonaws.com/DEV` |
 | S3 Bilder | Bucket `mbr-ptf-images-eu-central-1-dev` |
-| Firebase (nur Push) | Projekt `zeromouse`, Sender-ID `52558640423` |
 
 ## 1. Authentifizierung
 
@@ -106,7 +109,7 @@ Filter-Checkbox):
 | `out` | Rausgehen erkannt | `isHidden: 1`; Checkbox nur bei aktivierten versteckten Ereignissen vorausgewählt |
 | `free`, sonstige | Nicht entscheidbar | erscheinen in der ungefilterten Liste nicht |
 
-### 3.1 Bewerten, Löschen, Filtern (App 1.14.19, dekompiliert)
+### 3.1 Bewerten, Löschen, Filtern (App 1.14.19)
 
 Es gibt **keine** `deleteMbrPtfEventData`-Mutation. Alles läuft über
 `updateMbrPtfEventData`; `eventID` und `deviceID` sind Pflichtfelder des Inputs. Die

@@ -1,0 +1,4 @@
+pytest-homeassistant-custom-component
+pycognito>=2024.5.1
+mypy
+ruff

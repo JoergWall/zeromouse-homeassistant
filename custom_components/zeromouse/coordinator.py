@@ -171,9 +171,7 @@ class ZeroMouseCoordinator(DataUpdateCoordinator[dict[str, ZeroMouseDevice]]):
             ids = {ident for domain, ident in entry.identifiers if domain == DOMAIN}
             if ids and not ids & devices.keys():
                 _LOGGER.info("Removing ZeroMOUSE device %s, no longer in the account", ids)
-                registry.async_update_device(
-                    entry.id, remove_config_entry_id=self.config_entry.entry_id
-                )
+                registry.async_remove_device(entry.id)
 
     async def _fetch(self) -> dict[str, ZeroMouseDevice]:
         old = self.data or {}
@@ -222,12 +220,17 @@ class ZeroMouseCoordinator(DataUpdateCoordinator[dict[str, ZeroMouseDevice]]):
         if not new:
             return
         self.new_events[device.device_id] = new
+        ha_device = dr.async_get(self.hass).async_get_device_by_identifier(
+            (DOMAIN, device.device_id), self.config_entry.entry_id
+        )
         for event in new:
             when = parse_event_time(event)
             self.hass.bus.async_fire(
                 EVENT_ZEROMOUSE,
                 {
-                    "device_id": device.device_id,
+                    # Home Assistant device id, usable in the service actions
+                    "device_id": ha_device.id if ha_device else None,
+                    "zeromouse_device_id": device.device_id,
                     "device_name": device.name,
                     "event_id": event.get("eventID"),
                     "classification": event.get("classification_byNet"),

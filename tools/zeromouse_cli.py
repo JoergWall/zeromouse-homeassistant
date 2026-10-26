@@ -9,6 +9,8 @@ Usage:
     python tools/zeromouse_cli.py image           # newest event image of the first device
     python tools/zeromouse_cli.py watch           # realtime events
     python tools/zeromouse_cli.py set-entry 1     # 0 free, 1 block prey, 2 face detection, 3 locked
+    python tools/zeromouse_cli.py schema          # GraphQL schema (read only) into ./zeromouse_schema.json
+    python tools/zeromouse_cli.py raw-events --limit 300   # raw events incl. ratings/deleted
 """
 
 from __future__ import annotations
@@ -33,6 +35,54 @@ _pkg.__path__ = [str(_COMPONENT)]
 sys.modules["zeromouse"] = _pkg
 api_mod = importlib.import_module("zeromouse.api")
 realtime_mod = importlib.import_module("zeromouse.realtime")
+
+
+INTROSPECTION = """
+query IntrospectionQuery {
+  __schema {
+    queryType { name }
+    mutationType { name }
+    subscriptionType { name }
+    types {
+      kind name
+      fields(includeDeprecated: true) {
+        name
+        args { name type { ...TypeRef } }
+        type { ...TypeRef }
+      }
+      inputFields { name type { ...TypeRef } }
+      enumValues(includeDeprecated: true) { name }
+    }
+  }
+}
+fragment TypeRef on __Type {
+  kind name
+  ofType { kind name ofType { kind name ofType { kind name ofType { kind name } } } }
+}
+"""
+
+RAW_EVENTS = """
+query rawEvents($deviceID: String!, $limit: Int, $nextToken: String) {
+  listEventbyDeviceChrono(deviceID: $deviceID, sortDirection: DESC, limit: $limit, nextToken: $nextToken) {
+    items {
+      eventID eventTime type deviceID isSeen isFlagged isHidden isDeleted isFavorite
+      titleImageIndex classification_byNet catClusterId catClusterId_byUser createdAt updatedAt
+      images { classification_byNet classification_byReviewer imageIndex milliseconds }
+    }
+    nextToken
+  }
+}
+"""
+
+
+def _type_name(ref: dict | None) -> str:
+    if not ref:
+        return "?"
+    if ref["kind"] == "NON_NULL":
+        return _type_name(ref["ofType"]) + "!"
+    if ref["kind"] == "LIST":
+        return "[" + _type_name(ref["ofType"]) + "]"
+    return ref["name"]
 
 
 def _dump(data: object) -> None:
@@ -108,6 +158,58 @@ async def main(args: argparse.Namespace) -> None:
 
             print("Waiting for events (Ctrl+C to stop)...", file=sys.stderr)
             await realtime_mod.ZeroMouseRealtime(session, api, on_event).run()
+        elif args.command == "schema":
+            data = await api.graphql(INTROSPECTION)
+            Path("zeromouse_schema.json").write_text(json.dumps(data, indent=2))
+            types_by_name = {t["name"]: t for t in data["__schema"]["types"]}
+            for name in sorted(types_by_name):
+                if "EventData" not in name and name not in ("Mutation", "Query"):
+                    continue
+                t = types_by_name[name]
+                print(f"== {t['kind']} {name}")
+                for f in t.get("inputFields") or []:
+                    print(f"   {f['name']}: {_type_name(f['type'])}")
+                for f in t.get("fields") or []:
+                    if name in ("Mutation", "Query") and "Event" not in f["name"]:
+                        continue
+                    args_txt = ", ".join(
+                        f"{a['name']}: {_type_name(a['type'])}" for a in f["args"]
+                    )
+                    print(f"   {f['name']}({args_txt}): {_type_name(f['type'])}")
+                for e in t.get("enumValues") or []:
+                    print(f"   = {e['name']}")
+            print("Written to zeromouse_schema.json", file=sys.stderr)
+        elif args.command == "raw-events":
+            items: list = []
+            token = None
+            while len(items) < args.limit:
+                page = (
+                    await api.graphql(
+                        RAW_EVENTS,
+                        {"deviceID": device_id, "limit": 100, "nextToken": token},
+                    )
+                )["listEventbyDeviceChrono"]
+                items += [i for i in page["items"] if i]
+                token = page.get("nextToken")
+                if not token:
+                    break
+            Path("zeromouse_events_raw.json").write_text(
+                json.dumps(items, indent=2, ensure_ascii=False)
+            )
+            summary: dict = {}
+            for e in items:
+                reviewer = sorted(
+                    {str(i.get("classification_byReviewer")) for i in e.get("images") or []}
+                )
+                key = (
+                    f"net={e.get('classification_byNet')} flagged={e.get('isFlagged')} "
+                    f"seen={e.get('isSeen')} deleted={e.get('isDeleted')} "
+                    f"hidden={e.get('isHidden')} reviewer={'/'.join(reviewer)}"
+                )
+                summary[key] = summary.get(key, 0) + 1
+            for key, count in sorted(summary.items(), key=lambda kv: -kv[1]):
+                print(f"{count:5}  {key}")
+            print(f"{len(items)} events written to zeromouse_events_raw.json", file=sys.stderr)
         elif args.command == "set-entry":
             _dump(await api.async_set_entry_mode(device_id, int(args.value)))
         elif args.command == "set-undecidable":
@@ -133,6 +235,8 @@ if __name__ == "__main__":
             "watch",
             "set-entry",
             "set-undecidable",
+            "schema",
+            "raw-events",
         ],
     )
     parser.add_argument("value", nargs="?")

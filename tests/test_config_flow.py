@@ -5,16 +5,14 @@ from __future__ import annotations
 from unittest.mock import MagicMock
 
 import pytest
-
-from homeassistant import config_entries
-from homeassistant.const import CONF_EMAIL, CONF_PASSWORD
-from homeassistant.core import HomeAssistant
-from homeassistant.data_entry_flow import FlowResultType
-
 from pytest_homeassistant_custom_component.common import MockConfigEntry
 
 from custom_components.zeromouse.api import ZeroMouseApiError, ZeroMouseAuthError
 from custom_components.zeromouse.const import DOMAIN
+from homeassistant import config_entries
+from homeassistant.const import CONF_EMAIL, CONF_PASSWORD
+from homeassistant.core import HomeAssistant
+from homeassistant.data_entry_flow import FlowResultType
 
 from .conftest import OWNER_ID
 

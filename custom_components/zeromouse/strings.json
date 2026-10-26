@@ -64,10 +64,10 @@
               "clean": "No prey",
               "undecidable": "Inconclusive",
               "out": "Leaving",
-              "early": "Too early",
-              "late": "Too late",
+              "early": "No prey detected (early)",
+              "late": "Inconclusive (late)",
               "free": "Free entry",
-              "test": "Test",
+              "test": "Hand detected",
               "unknown": "Unknown",
               "hand": "Hand detected"
             }
@@ -130,10 +130,10 @@
           "clean": "No prey",
           "undecidable": "Inconclusive",
           "out": "Leaving",
-          "early": "Too early",
-          "late": "Too late",
+          "early": "No prey detected (early)",
+          "late": "Inconclusive (late)",
           "free": "Free entry",
-          "test": "Test",
+          "test": "Hand detected",
           "unknown": "Unknown",
           "hand": "Hand detected"
         }
@@ -201,6 +201,55 @@
     },
     "update_failed": {
       "message": "Fetching ZeroMOUSE data failed: {error}"
+    },
+    "device_not_found": {
+      "message": "No ZeroMOUSE device with ID {device_id} found."
+    },
+    "entry_not_loaded": {
+      "message": "The ZeroMOUSE integration of device {device_id} is not loaded."
+    }
+  },
+  "services": {
+    "rate_event": {
+      "name": "Rate event",
+      "description": "Rates the classification of an event like \"Right\"/\"Wrong\" in the app. The feedback trains the AI.",
+      "fields": {
+        "device_id": {
+          "name": "Device",
+          "description": "The ZeroMOUSE device the event belongs to."
+        },
+        "event_id": {
+          "name": "Event ID",
+          "description": "The event ID, e.g. from the `event_id` attribute of the \"Last event\" sensor or from `zeromouse_event`."
+        },
+        "rating": {
+          "name": "Rating",
+          "description": "Whether the classification is correct or incorrect, or \"No rating\" to remove the rating."
+        }
+      }
+    },
+    "delete_event": {
+      "name": "Delete event",
+      "description": "Deletes an event with its pictures like \"Delete\" in the app.",
+      "fields": {
+        "device_id": {
+          "name": "Device",
+          "description": "The ZeroMOUSE device the event belongs to."
+        },
+        "event_id": {
+          "name": "Event ID",
+          "description": "The event ID, e.g. from the `event_id` attribute of the \"Last event\" sensor or from `zeromouse_event`."
+        }
+      }
+    }
+  },
+  "selector": {
+    "rating": {
+      "options": {
+        "correct": "Correct",
+        "incorrect": "Incorrect",
+        "none": "No rating"
+      }
     }
   }
 }

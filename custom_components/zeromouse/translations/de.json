@@ -64,10 +64,10 @@
               "clean": "Keine Beute erkannt",
               "undecidable": "Nicht entscheidbar",
               "out": "Rausgehen erkannt",
-              "early": "Zu früh",
-              "late": "Zu spät",
+              "early": "Keine Beute erkannt (früh)",
+              "late": "Nicht entscheidbar (spät)",
               "free": "Freier Eintritt",
-              "test": "Test",
+              "test": "Hand erkannt",
               "unknown": "Unbekannt",
               "hand": "Hand erkannt"
             }
@@ -130,10 +130,10 @@
           "clean": "Keine Beute erkannt",
           "undecidable": "Nicht entscheidbar",
           "out": "Rausgehen erkannt",
-          "early": "Zu früh",
-          "late": "Zu spät",
+          "early": "Keine Beute erkannt (früh)",
+          "late": "Nicht entscheidbar (spät)",
           "free": "Freier Eintritt",
-          "test": "Test",
+          "test": "Hand erkannt",
           "unknown": "Unbekannt",
           "hand": "Hand erkannt"
         }
@@ -201,6 +201,55 @@
     },
     "update_failed": {
       "message": "Abruf der ZeroMOUSE-Daten fehlgeschlagen: {error}"
+    },
+    "device_not_found": {
+      "message": "Kein ZeroMOUSE-Gerät mit der ID {device_id} gefunden."
+    },
+    "entry_not_loaded": {
+      "message": "Die ZeroMOUSE-Integration für Gerät {device_id} ist nicht geladen."
+    }
+  },
+  "services": {
+    "rate_event": {
+      "name": "Ereignis bewerten",
+      "description": "Bewertet die Klassifikation eines Ereignisses wie „Richtig“/„Falsch“ in der App. Die Rückmeldung trainiert die KI.",
+      "fields": {
+        "device_id": {
+          "name": "Gerät",
+          "description": "Das ZeroMOUSE-Gerät, zu dem das Ereignis gehört."
+        },
+        "event_id": {
+          "name": "Ereignis-ID",
+          "description": "Die ID des Ereignisses, z. B. aus dem Attribut `event_id` des Sensors „Letztes Ereignis“ oder aus `zeromouse_event`."
+        },
+        "rating": {
+          "name": "Bewertung",
+          "description": "Ob die Klassifikation richtig oder falsch ist, oder „Keine Bewertung“, um die Bewertung zu entfernen."
+        }
+      }
+    },
+    "delete_event": {
+      "name": "Ereignis löschen",
+      "description": "Löscht ein Ereignis samt Bildern wie „Löschen“ in der App.",
+      "fields": {
+        "device_id": {
+          "name": "Gerät",
+          "description": "Das ZeroMOUSE-Gerät, zu dem das Ereignis gehört."
+        },
+        "event_id": {
+          "name": "Ereignis-ID",
+          "description": "Die ID des Ereignisses, z. B. aus dem Attribut `event_id` des Sensors „Letztes Ereignis“ oder aus `zeromouse_event`."
+        }
+      }
+    }
+  },
+  "selector": {
+    "rating": {
+      "options": {
+        "correct": "Richtig",
+        "incorrect": "Falsch",
+        "none": "Keine Bewertung"
+      }
     }
   }
 }

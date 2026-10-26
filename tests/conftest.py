@@ -7,13 +7,11 @@ from typing import Any
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
-
-from homeassistant.const import CONF_EMAIL, CONF_PASSWORD
-from homeassistant.core import HomeAssistant
-
 from pytest_homeassistant_custom_component.common import MockConfigEntry
 
 from custom_components.zeromouse.const import DOMAIN
+from homeassistant.const import CONF_EMAIL, CONF_PASSWORD
+from homeassistant.core import HomeAssistant
 
 OWNER_ID = "11111111-2222-3333-4444-555555555555"
 DEVICE_ID = "ZM-TEST-0001"
@@ -95,6 +93,14 @@ def mock_api() -> MagicMock:
     api.async_get_shadow = AsyncMock(side_effect=lambda _id: copy.deepcopy(SHADOW))
     api.async_get_events = AsyncMock(side_effect=lambda _id, _n: copy.deepcopy(EVENTS))
     api.async_get_events_since = AsyncMock(side_effect=lambda _id, _since, _n: copy.deepcopy(EVENTS))
+    api.async_get_events_page = AsyncMock(
+        side_effect=lambda _id, _token=None, _limit=100, favorites=False: (
+            copy.deepcopy(EVENTS),
+            None,
+        )
+    )
+    api.async_rate_event = AsyncMock()
+    api.async_delete_event = AsyncMock()
     api.async_get_statistics = AsyncMock(return_value=STATS)
     api.async_update_shadow = AsyncMock()
     api.async_set_entry_mode = AsyncMock()

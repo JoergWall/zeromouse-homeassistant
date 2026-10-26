@@ -3,7 +3,9 @@ dashboard/cats/
 
 # Output of tools/zeromouse_cli.py (contains account data and pictures)
 zeromouse_dump.json
+zeromouse_*.json
 zeromouse_*.jpg
+zeromouse_*.txt
 
 # Python / tooling
 __pycache__/

@@ -115,5 +115,13 @@
         "default": "mdi:door-closed-lock"
       }
     }
+  },
+  "services": {
+    "rate_event": {
+      "service": "mdi:check-decagram-outline"
+    },
+    "delete_event": {
+      "service": "mdi:delete-outline"
+    }
   }
 }

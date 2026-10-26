@@ -4,18 +4,10 @@ from __future__ import annotations
 
 import copy
 from datetime import timedelta
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import MagicMock, patch
 
 from freezegun.api import FrozenDateTimeFactory
 import pytest
-
-from homeassistant.config_entries import ConfigEntryState
-from homeassistant.const import CONF_EMAIL, CONF_PASSWORD
-from homeassistant.core import HomeAssistant
-from homeassistant.exceptions import HomeAssistantError
-from homeassistant.helpers import device_registry as dr
-from homeassistant.util import dt as dt_util
-
 from pytest_homeassistant_custom_component.common import (
     MockConfigEntry,
     async_fire_time_changed,
@@ -26,6 +18,12 @@ from pytest_homeassistant_custom_component.components.diagnostics import (
 
 from custom_components.zeromouse.api import ZeroMouseApiError, ZeroMouseAuthError
 from custom_components.zeromouse.const import DOMAIN
+from homeassistant.config_entries import ConfigEntryState
+from homeassistant.const import CONF_EMAIL, CONF_PASSWORD
+from homeassistant.core import HomeAssistant
+from homeassistant.exceptions import HomeAssistantError
+from homeassistant.helpers import device_registry as dr
+from homeassistant.util import dt as dt_util
 
 from .conftest import DEVICE_ID, EVENTS, FLAP, OWNER_ID, SHADOW
 
@@ -331,14 +329,19 @@ async def test_ws_events_variants(
     )
     msg = await ws.receive_json()
     assert msg["success"]
+    # e1 (epoch 1790000000 = 2026-09-21) is newer than since, e2 too
     assert len(msg["result"]["events"]) == 2
-    mock_api.async_get_events_since.assert_awaited()
+    assert msg["result"]["cursor"] is None
+    event = msg["result"]["events"][0]
+    assert event["ha_device_id"]
+    assert event["rating"] is None
+    assert event["group"] == event["classification"]  # clean / prey: own group
 
     await ws.send_json({"id": 2, "type": "zeromouse/events", "device_id": "other"})
     msg = await ws.receive_json()
     assert msg["result"]["events"] == []
 
-    mock_api.async_get_events.side_effect = ZeroMouseApiError("down")
+    mock_api.async_get_events_page.side_effect = ZeroMouseApiError("down")
     await ws.send_json({"id": 3, "type": "zeromouse/events"})
     msg = await ws.receive_json()
     assert not msg["success"]

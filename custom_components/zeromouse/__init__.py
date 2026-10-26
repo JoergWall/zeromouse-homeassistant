@@ -14,6 +14,7 @@ from .const import DOMAIN
 from .coordinator import ZeroMouseConfigEntry, ZeroMouseCoordinator
 from .frontend import async_setup_frontend
 from .realtime import ZeroMouseRealtime
+from .services import async_setup_services
 
 CONFIG_SCHEMA = cv.config_entry_only_config_schema(DOMAIN)
 
@@ -29,7 +30,8 @@ PLATFORMS: list[Platform] = [
 
 
 async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
-    """Register the event gallery card and its backend."""
+    """Register the service actions, the dashboard cards and their backend."""
+    async_setup_services(hass)
     await async_setup_frontend(hass)
     return True
 

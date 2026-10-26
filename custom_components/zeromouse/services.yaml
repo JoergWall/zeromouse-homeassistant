@@ -1,0 +1,34 @@
+rate_event:
+  fields:
+    device_id:
+      required: true
+      selector:
+        device:
+          integration: zeromouse
+    event_id:
+      required: true
+      example: "6ab3be5c-aa61-9b3a-38bb-3a7f3d4b0da0"
+      selector:
+        text:
+    rating:
+      required: true
+      selector:
+        select:
+          options:
+            - correct
+            - incorrect
+            - none
+          translation_key: rating
+
+delete_event:
+  fields:
+    device_id:
+      required: true
+      selector:
+        device:
+          integration: zeromouse
+    event_id:
+      required: true
+      example: "6ab3be5c-aa61-9b3a-38bb-3a7f3d4b0da0"
+      selector:
+        text:

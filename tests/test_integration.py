@@ -6,13 +6,6 @@ import copy
 from datetime import timedelta
 from unittest.mock import MagicMock
 
-from homeassistant import config_entries
-from homeassistant.config_entries import ConfigEntryState
-from homeassistant.const import CONF_EMAIL, CONF_PASSWORD
-from homeassistant.core import HomeAssistant
-from homeassistant.data_entry_flow import FlowResultType
-from homeassistant.util import dt as dt_util
-
 from pytest_homeassistant_custom_component.common import (
     MockConfigEntry,
     async_fire_time_changed,
@@ -24,6 +17,12 @@ from custom_components.zeromouse.api import (
     parse_event_time,
 )
 from custom_components.zeromouse.const import DOMAIN
+from homeassistant import config_entries
+from homeassistant.config_entries import ConfigEntryState
+from homeassistant.const import CONF_EMAIL, CONF_PASSWORD
+from homeassistant.core import HomeAssistant
+from homeassistant.data_entry_flow import FlowResultType
+from homeassistant.util import dt as dt_util
 
 from .conftest import DEVICE_ID, EVENTS, OWNER_ID
 

@@ -28,13 +28,15 @@ EMAIL_SELECTOR = TextSelector(
 PASSWORD_SELECTOR = TextSelector(
     TextSelectorConfig(type=TextSelectorType.PASSWORD, autocomplete="current-password")
 )
-USER_SCHEMA = vol.Schema(
+# voluptuous works on every supported version; Home Assistant 2026.10 types the
+# schema parameters with the API compatible probatio, hence ``Any``.
+USER_SCHEMA: Any = vol.Schema(
     {
         vol.Required(CONF_EMAIL): EMAIL_SELECTOR,
         vol.Required(CONF_PASSWORD): PASSWORD_SELECTOR,
     }
 )
-PASSWORD_SCHEMA = vol.Schema({vol.Required(CONF_PASSWORD): PASSWORD_SELECTOR})
+PASSWORD_SCHEMA: Any = vol.Schema({vol.Required(CONF_PASSWORD): PASSWORD_SELECTOR})
 
 
 class ZeroMouseConfigFlow(ConfigFlow, domain=DOMAIN):

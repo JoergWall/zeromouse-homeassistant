@@ -13,7 +13,6 @@ from unittest.mock import MagicMock, patch
 
 import aiohttp
 import pytest
-
 from pytest_homeassistant_custom_component.test_util.aiohttp import (
     AiohttpClientMocker,
     AiohttpClientMockResponse,
@@ -446,3 +445,86 @@ async def test_custom_executor(session: aiohttp.ClientSession) -> None:
     executor = MagicMock(side_effect=lambda func, *args: _default_executor(func, *args))
     client = ZeroMouseApi(session, "a@b.c", "pw", executor=executor)
     assert client._executor is executor
+
+
+async def test_page_without_data(api: ZeroMouseApi, mocker: AiohttpClientMocker) -> None:
+    """Test field-level errors and error bodies without data (review finding)."""
+    await logged_in(api, mocker)
+    responses = iter(
+        [
+            (200, {"data": {"listEventbyFavoriteChrono": None}, "errors": [{"message": "x"}]}),
+            (503, {"message": "Service Unavailable"}),
+            (200, ["not", "a", "dict"]),
+        ]
+    )
+
+    async def _side_effect(method: str, url: Any, data: Any) -> AiohttpClientMockResponse:
+        status, body = next(responses)
+        return AiohttpClientMockResponse("post", url, status=status, json=body)
+
+    mocker.post(GRAPHQL_URL, side_effect=_side_effect)
+    with pytest.raises(ZeroMouseApiError, match="no data"):
+        await api.async_get_events_page("d1", favorites=True)
+    with pytest.raises(ZeroMouseApiError, match="HTTP 503"):
+        await api.async_get_events_page("d1")
+    with pytest.raises(ZeroMouseApiError):
+        await api.async_get_events_page("d1")
+
+
+@pytest.mark.parametrize("value", ["nan", "inf", "-inf", 1e300])
+def test_parse_event_time_rejects_bad_numbers(value: Any) -> None:
+    """Test that unusable numbers do not raise."""
+    assert parse_event_time({"eventTime": value}) is None
+    assert parse_event_time({"eventTime": value, "createdAt": "2026-01-02T03:04:05Z"}).year == 2026
+
+
+async def test_rate_and_delete_event(api: ZeroMouseApi, mocker: AiohttpClientMocker) -> None:
+    """Test the event mutations: keys, values and the "must exist" condition."""
+    await logged_in(api, mocker)
+    responses = iter(
+        [
+            {"data": {"updateMbrPtfEventData": {"eventID": "e1", "isFlagged": 2}}},
+            {"data": {"updateMbrPtfEventData": {"eventID": "e1", "isFlagged": 1}}},
+            {"data": {"updateMbrPtfEventData": {"eventID": "e1", "isFlagged": 0}}},
+            {"data": {"updateMbrPtfEventData": {"eventID": "e1", "isDeleted": 1}}},
+            {
+                "data": {"updateMbrPtfEventData": None},
+                "errors": [{"errorType": "DynamoDB:ConditionalCheckFailedException"}],
+            },
+        ]
+    )
+
+    async def _side_effect(method: str, url: Any, data: Any) -> AiohttpClientMockResponse:
+        return AiohttpClientMockResponse("post", url, json=next(responses))
+
+    mocker.post(GRAPHQL_URL, side_effect=_side_effect)
+    await api.async_rate_event("d1", "e1", "correct")
+    sent = mocker.mock_calls[-1][2]
+    assert "updateMbrPtfEventData" in sent["query"]
+    assert sent["variables"] == {
+        "input": {"eventID": "e1", "deviceID": "d1", "isFlagged": 2},
+        "condition": {"eventTime": {"attributeExists": True}},
+    }
+    await api.async_rate_event("d1", "e1", "incorrect")
+    assert mocker.mock_calls[-1][2]["variables"]["input"]["isFlagged"] == 1
+    # Like tapping the active button again in the app
+    await api.async_rate_event("d1", "e1", None)
+    assert mocker.mock_calls[-1][2]["variables"]["input"]["isFlagged"] == 0
+    await api.async_delete_event("d1", "e1")
+    assert mocker.mock_calls[-1][2]["variables"]["input"] == {
+        "eventID": "e1",
+        "deviceID": "d1",
+        "isDeleted": 1,
+    }
+    with pytest.raises(ZeroMouseApiError):
+        await api.async_delete_event("d1", "nope")
+
+
+def test_event_rating() -> None:
+    """Test the mapping of isFlagged."""
+    from custom_components.zeromouse.api import event_rating
+
+    assert event_rating({"isFlagged": 2}) == "correct"
+    assert event_rating({"isFlagged": 1}) == "incorrect"
+    assert event_rating({"isFlagged": 0}) is None
+    assert event_rating({}) is None

@@ -13,6 +13,7 @@ from collections.abc import Awaitable, Callable
 from datetime import UTC, datetime
 import json
 import logging
+import math
 import time
 from typing import Any
 from urllib.parse import quote
@@ -113,6 +114,59 @@ query listEventbyDeviceChrono(
   $nextToken: String
 ) {{
   listEventbyDeviceChrono(
+    deviceID: $deviceID
+    sortDirection: $sortDirection
+    limit: $limit
+    nextToken: $nextToken
+  ) {{
+    items {{
+      {EVENT_FIELDS}
+      images {{
+        classification_byNet
+        classification_byReviewer
+        imageIndex
+        milliseconds
+      }}
+    }}
+    nextToken
+  }}
+}}
+"""
+
+# isFlagged as the app writes it ("Richtig" / "Falsch", tapped again: 0); see API.md
+EVENT_FLAG_NONE = 0
+EVENT_FLAG_CORRECT = 2
+EVENT_FLAG_INCORRECT = 1
+RATING_CORRECT = "correct"
+RATING_INCORRECT = "incorrect"
+_RATING_FLAGS = {RATING_CORRECT: EVENT_FLAG_CORRECT, RATING_INCORRECT: EVENT_FLAG_INCORRECT}
+
+MUTATION_UPDATE_EVENT = """
+mutation UpdateMbrPtfEventData(
+  $input: UpdateMbrPtfEventDataInput!
+  $condition: ModelMbrPtfEventDataConditionInput
+) {
+  updateMbrPtfEventData(input: $input, condition: $condition) {
+    eventID
+    deviceID
+    isFlagged
+    isDeleted
+    isFavorite
+  }
+}
+"""
+
+# Only change events that exist: an update must never create an event
+_EXISTING_EVENT = {"eventTime": {"attributeExists": True}}
+
+QUERY_LIST_FAVORITES = f"""
+query listEventbyFavoriteChrono(
+  $deviceID: String!
+  $sortDirection: ModelSortDirection
+  $limit: Int
+  $nextToken: String
+) {{
+  listEventbyFavoriteChrono(
     deviceID: $deviceID
     sortDirection: $sortDirection
     limit: $limit
@@ -368,8 +422,13 @@ class ZeroMouseApi:
                     if resp.status == 401:
                         raise ZeroMouseAuthError("GraphQL: HTTP 401")
                     payload = await resp.json(content_type=None)
+                    status = resp.status
             except (aiohttp.ClientError, TimeoutError, ValueError) as err:
                 raise ZeroMouseApiError(f"GraphQL: {err}") from err
+            if not isinstance(payload, dict) or (
+                "data" not in payload and "errors" not in payload
+            ):
+                raise ZeroMouseApiError(f"GraphQL: HTTP {status}: {str(payload)[:200]}")
             errors = payload.get("errors")
             if errors and not payload.get("data"):
                 if any(e.get("errorType") == "UnauthorizedException" for e in errors):
@@ -455,16 +514,75 @@ class ZeroMouseApi:
 
     # ---------------------------------------------------------------- events
 
+    async def async_get_events_page(
+        self,
+        device_id: str,
+        next_token: str | None = None,
+        limit: int = 100,
+        favorites: bool = False,
+    ) -> tuple[list[dict[str, Any]], str | None]:
+        """Return one page of events (newest first) and the token of the next page.
+
+        ``favorites`` uses the app's favourites index, which only holds favourites.
+        Deleted events are included; callers filter them.
+        """
+        query, field = (
+            (QUERY_LIST_FAVORITES, "listEventbyFavoriteChrono")
+            if favorites
+            else (QUERY_LIST_EVENTS, "listEventbyDeviceChrono")
+        )
+        data = await self.graphql(
+            query,
+            {
+                "deviceID": device_id,
+                "sortDirection": "DESC",
+                "limit": limit,
+                "nextToken": next_token,
+            },
+        )
+        page = data.get(field)
+        if not isinstance(page, dict):
+            raise ZeroMouseApiError(f"{field}: no data")
+        items = [e for e in page.get("items") or [] if e]
+        return items, page.get("nextToken")
+
+    async def async_update_event(
+        self, device_id: str, event_id: str, **fields: Any
+    ) -> dict[str, Any]:
+        """Change fields of an existing event (rating, deleted, favourite)."""
+        data = await self.graphql(
+            MUTATION_UPDATE_EVENT,
+            {
+                "input": {"eventID": event_id, "deviceID": device_id, **fields},
+                "condition": _EXISTING_EVENT,
+            },
+        )
+        event = data.get("updateMbrPtfEventData")
+        if not isinstance(event, dict):
+            raise ZeroMouseApiError(f"Event {event_id} could not be changed")
+        return event
+
+    async def async_rate_event(
+        self, device_id: str, event_id: str, rating: str | None
+    ) -> None:
+        """Rate the classification like "Richtig" / "Falsch" in the app.
+
+        ``rating`` is "correct", "incorrect" or None to remove the rating.
+        """
+        await self.async_update_event(
+            device_id, event_id, isFlagged=_RATING_FLAGS.get(rating or "", EVENT_FLAG_NONE)
+        )
+
+    async def async_delete_event(self, device_id: str, event_id: str) -> None:
+        """Delete an event like the app: the cloud only marks it as deleted."""
+        await self.async_update_event(device_id, event_id, isDeleted=1)
+
     async def async_get_events(
         self, device_id: str, limit: int = 20
     ) -> list[dict[str, Any]]:
         """Return the newest events of a device, newest first."""
-        data = await self.graphql(
-            QUERY_LIST_EVENTS,
-            {"deviceID": device_id, "sortDirection": "DESC", "limit": limit},
-        )
-        items = data["listEventbyDeviceChrono"]["items"]
-        return [e for e in items if e and not e.get("isDeleted")]
+        items, _ = await self.async_get_events_page(device_id, limit=limit)
+        return [e for e in items if not e.get("isDeleted")]
 
     async def async_get_events_since(
         self, device_id: str, since: datetime, max_items: int = 1000
@@ -473,27 +591,15 @@ class ZeroMouseApi:
         events: list[dict[str, Any]] = []
         next_token = None
         while len(events) < max_items:
-            data = await self.graphql(
-                QUERY_LIST_EVENTS,
-                {
-                    "deviceID": device_id,
-                    "sortDirection": "DESC",
-                    "limit": 100,
-                    "nextToken": next_token,
-                },
-            )
-            page = data["listEventbyDeviceChrono"]
+            items, next_token = await self.async_get_events_page(device_id, next_token)
             reached_end = False
-            for event in page["items"]:
-                if not event:
-                    continue
+            for event in items:
                 when = parse_event_time(event)
                 if when is not None and when < since:
                     reached_end = True
                     break
                 if not event.get("isDeleted"):
                     events.append(event)
-            next_token = page.get("nextToken")
             if reached_end or not next_token:
                 break
         return events[:max_items]
@@ -582,6 +688,12 @@ def event_image_index(event: dict[str, Any]) -> int | None:
     return None
 
 
+def event_rating(event: dict[str, Any]) -> str | None:
+    """Return the user's rating of an event: "correct", "incorrect" or None."""
+    flag = event.get("isFlagged")
+    return next((rating for rating, f in _RATING_FLAGS.items() if f == flag), None)
+
+
 def parse_event_time(event: dict[str, Any]) -> datetime | None:
     """Parse ``eventTime`` (epoch s/ms or ISO string), fall back to ``createdAt``."""
     for key in ("eventTime", "createdAt"):
@@ -596,7 +708,12 @@ def parse_event_time(event: dict[str, Any]) -> datetime | None:
             except ValueError:
                 continue
             return parsed if parsed.tzinfo else parsed.replace(tzinfo=UTC)
+        if not math.isfinite(number):
+            continue
         if number > 1e12:
             number /= 1000
-        return datetime.fromtimestamp(number, tz=UTC)
+        try:
+            return datetime.fromtimestamp(number, tz=UTC)
+        except (OverflowError, OSError, ValueError):
+            continue
     return None

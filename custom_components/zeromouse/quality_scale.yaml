@@ -2,18 +2,14 @@
 # https://developers.home-assistant.io/docs/core/integration-quality-scale/
 rules:
   # Bronze
-  action-setup:
-    status: exempt
-    comment: The integration registers no service actions.
+  action-setup: done
   appropriate-polling: done
   brands: done
   common-modules: done
   config-flow-test-coverage: done
   config-flow: done
   dependency-transparency: done
-  docs-actions:
-    status: exempt
-    comment: The integration registers no service actions.
+  docs-actions: done
   docs-triggers:
     status: exempt
     comment: No integration-specific triggers; the zeromouse_event bus event is documented.

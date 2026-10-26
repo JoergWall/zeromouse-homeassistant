@@ -2,7 +2,8 @@
 
 Quelle: `ZeroMouseRn.app` (iOS/React-Native, Bundle-ID `de.zeromouse.app`), Hermes-Bytecode v98
 (`main.jsbundle`), disassembliert/dekompiliert mit [hermes-dec](https://github.com/P1sec/hermes-dec).
-Stand der App: Build vom 2025-08-31.
+Stand der App: Build vom 2025-08-31; Bewerten/Löschen/Filter geprüft mit App 1.14.19
+(Oktober 2026).
 
 Das Backend ist ein klassischer **AWS Amplify**-Stack in `eu-central-1`:
 
@@ -84,22 +85,58 @@ Wichtigste Operationen (vollständige Query-Strings stehen in `custom_components
 | `getMbrPtfFlapData(deviceID)` | ein Gerät |
 | `updateMbrPtfFlapData(input)` | Name, `blockUnknownCats`, `catClusters` (immer die komplette Liste senden) |
 | `listEventbyDeviceChrono(deviceID, sortDirection, limit, nextToken, filter)` | Ereignisse (neueste zuerst mit `DESC`) inkl. `images {imageIndex …}` |
-| `updateMbrPtfEventData(input)` | `isSeen`, `isFavorite`, `isFlagged`, `catClusterId_byUser`, … |
-| `deleteMbrPtfEventData(input)` | Ereignis löschen |
+| `listEventbyFavoriteChrono(deviceID, …)` | nur Favoriten (eigener Index) |
+| `listEventByOwner(ownerID, eventTime, …)` | Ereignisse aller Geräte eines Kontos |
+| `updateMbrPtfEventData(input, condition)` | `isFlagged` (Bewertung), `isDeleted` (Löschen), `isFavorite`, `isSeen`, `catClusterId_byUser`, … – siehe 3.1 |
 | `queryMbrPtfMessageDataByOwner(ownerID)` | In-App-Nachrichten |
 | `getLabelData(deviceID)` | Hardware-/Label-Infos, Beta-Flag |
 | `subscription onCreateMbrPtfEventData` | Echtzeit: neues Ereignis (ohne Variablen, serverseitig nach Owner gefiltert) |
 
-`classification_byNet` eines Ereignisses:
+`classification_byNet` eines Ereignisses und wie die App 1.14.19 es anzeigt (Titel und
+Filter-Checkbox):
 
-| Wert | Bedeutung |
+| Wert | Anzeige in der App | Bemerkung |
+|---|---|---|
+| `clean` | Keine Beute erkannt | |
+| `early` | Keine Beute erkannt | vom Gerät als `isHidden: 1` markiert |
+| `prey` | Beute erkannt | |
+| `undecidable` | Nicht entscheidbar | `isHidden: 1`, wird trotzdem angezeigt |
+| `late`, `unknown` | Nicht entscheidbar | `late` mit `isHidden: 1` |
+| `test` | Hand erkannt | |
+| `out` | Rausgehen erkannt | `isHidden: 1`; Checkbox nur bei aktivierten versteckten Ereignissen vorausgewählt |
+| `free`, sonstige | Nicht entscheidbar | erscheinen in der ungefilterten Liste nicht |
+
+### 3.1 Bewerten, Löschen, Filtern (App 1.14.19, dekompiliert)
+
+Es gibt **keine** `deleteMbrPtfEventData`-Mutation. Alles läuft über
+`updateMbrPtfEventData`; `eventID` und `deviceID` sind Pflichtfelder des Inputs. Die
+Integration schickt zusätzlich `condition: {eventTime: {attributeExists: true}}`, damit
+eine falsche ID kein leeres Ereignis anlegt (Fehler `ConditionalCheckFailedException`).
+
+| Aktion in der App | Input |
 |---|---|
-| `prey` | Beute erkannt |
-| `clean` | keine Beute |
-| `undecidable` | nicht entscheidbar |
-| `out` | Katze geht raus |
-| `early` / `late` | Auslösung zu früh/zu spät (keine Klassifikation) |
-| `free`, `test`, `unknown` | Sonderfälle |
+| *Richtig* | `isFlagged: 2`; erneutes Tippen auf das aktive *Richtig*: `isFlagged: 0` |
+| *Falsch* | `isFlagged: 1`; erneutes Tippen: `isFlagged: 0` |
+| *Löschen* | `isDeleted: 1` (das Ereignis bleibt in der Cloud, wird aber nicht mehr gelistet) |
+| Favorit (Herz) | `isFavorite: 1, ttl: null` – das Ereignis läuft nicht mehr ab; höchstens `MAX_LIKED_EVENTS` = 50 Favoriten. Entfernen: `isFavorite: 0, ttl: <jetzt + Aufbewahrungsdauer>` (Epoch-Sekunden) |
+
+Filterdialog (`DEFAULT_FILTER_STATE`: alle Checkboxen außer *Rausgehen erkannt* an;
+diese folgt der Einstellung „versteckte Ereignisse anzeigen“). Die App setzt daraus
+`classificationFilter` zusammen und filtert serverseitig mit
+`or: [{classification_byNet: {eq: …}}, …]`, immer zusammen mit `ownerID eq` und
+`isDeleted eq 0`:
+
+| Checkbox | Klassifikationen |
+|---|---|
+| Keine Beute erkannt | `clean`, `early` |
+| Beute erkannt | `prey` |
+| Nicht entscheidbar | `undecidable`, `late`, `unknown` |
+| Hand erkannt | `test` |
+| Rausgehen erkannt | `out` |
+| Nur Favoriten anzeigen | Abfrage über `listEventbyFavoriteChrono`, ignoriert die anderen Filter |
+
+Ohne `classificationFilter` zeigt die App `early`, `late`, `undecidable` (auch wenn
+versteckt) und alle nicht versteckten Ereignisse außer `free`.
 
 ## 4. Bilder
 

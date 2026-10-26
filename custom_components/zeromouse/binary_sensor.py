@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from datetime import timedelta
 
-from homeassistant.components.binary_sensor import (
+from homeassistant.components.binary_sensor import (  # type: ignore[attr-defined,unused-ignore]
     BinarySensorDeviceClass,
     BinarySensorEntity,
 )

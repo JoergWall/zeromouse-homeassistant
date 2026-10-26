@@ -1,4 +1,7 @@
-pytest-homeassistant-custom-component
+# Pinned to a known-good combination (Home Assistant 2026.10.4); update together
+pytest-homeassistant-custom-component==0.13.375
+# The integration depends on "frontend", which needs the frontend package in tests
+home-assistant-frontend==20260826.7
 pycognito>=2024.5.1
 mypy
 ruff
